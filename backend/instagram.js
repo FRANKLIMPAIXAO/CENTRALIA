@@ -22,11 +22,19 @@ function getGraphBase(accessToken) {
    CONFIG HELPERS
 ══════════════════════════════════════════ */
 function readConfig() {
-  try {
-    return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
-  } catch {
-    return {};
-  }
+  // 1. Tenta ler do arquivo JSON
+  let file = {};
+  try { file = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')); } catch {}
+
+  // 2. Fallback para variáveis de ambiente (Railway / produção)
+  return {
+    accessToken   : file.accessToken    || process.env.IG_ACCESS_TOKEN  || '',
+    igUserId      : file.igUserId       || process.env.IG_USER_ID        || '',
+    appId         : file.appId          || process.env.IG_APP_ID         || '',
+    appSecret     : file.appSecret      || process.env.IG_APP_SECRET     || '',
+    imgbbApiKey   : file.imgbbApiKey    || process.env.IMGBB_API_KEY     || '',
+    tokenExpiresAt: file.tokenExpiresAt || 0
+  };
 }
 
 function writeConfig(obj) {
