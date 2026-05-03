@@ -27,6 +27,19 @@ const { parseFiscalXML, detectDocType, formatCurrency, formatPercent, crtLabel }
 
 const app      = express();
 
+/* ══ AUTH ══ */
+const crypto2 = require('crypto');
+function getAuthToken() {
+  if (!process.env.APP_PASSWORD) return null;
+  return crypto2.createHmac('sha256', 'centralia-2026').update(process.env.APP_PASSWORD).digest('hex');
+}
+function authMiddleware(req, res, next) {
+  if (!process.env.APP_PASSWORD) return next();
+  const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+  if (token !== getAuthToken()) return res.status(401).json({ error: 'Não autorizado.' });
+  next();
+}
+
 // Validação de chaves no startup
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error('❌ ANTHROPIC_API_KEY não encontrada no .env!');
@@ -51,6 +64,26 @@ app.use(express.static(path.join(__dirname, '../frontend/public'), {
     res.setHeader('Pragma', 'no-cache');
   }
 }));
+
+/* ══════════════════════════════════════════
+   AUTH ROUTES
+══════════════════════════════════════════ */
+app.post('/api/auth/login', (req, res) => {
+  if (!process.env.APP_PASSWORD) return res.json({ ok: true, token: 'no-auth' });
+  if (req.body.password !== process.env.APP_PASSWORD) return res.status(401).json({ error: 'Senha incorreta.' });
+  res.json({ ok: true, token: getAuthToken() });
+});
+app.get('/api/auth/check', (req, res) => {
+  if (!process.env.APP_PASSWORD) return res.json({ ok: true, required: false });
+  const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+  res.json({ ok: token === getAuthToken(), required: true });
+});
+
+// Protege todas as rotas abaixo com auth
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/auth')) return next();
+  authMiddleware(req, res, next);
+});
 
 /* ══════════════════════════════════════════
    MULTER — upload de arquivos
@@ -916,8 +949,12 @@ Tom: autoridade + acessibilidade. Fala direta, sem enrolação, com exemplos pr�
 
 Ao receber um tema, gere EXATAMENTE neste formato:
 
----GANCHO---
-[Uma frase de impacto para os primeiros 3-5 segundos. Deve PARAR o scroll. Pode ser uma pergunta provocativa, uma afirmação chocante, um dado surpreendente ou uma promessa direta. Máx. 2 linhas.]
+---GANCHO1---
+[Opção 1: Provocação/medo — ex: afirmação chocante ou consequência negativa. Máx. 2 linhas.]
+---GANCHO2---
+[Opção 2: Curiosidade/pergunta — ex: "Você sabia que...?" ou "Por que...?". Máx. 2 linhas.]
+---GANCHO3---
+[Opção 3: Promessa/benefício direto — ex: "Neste vídeo você vai aprender...". Máx. 2 linhas.]
 ---ROTEIRO---
 [Script completo para falar no vídeo. Linguagem natural e coloquial — como se estivesse explicando para um amigo contador. Estrutura: abertura que confirma o gancho → 2-3 pontos principais desenvolvidos → chamada para ação (salvar, seguir, comentar ou DM). Duração: 60-90 segundos de fala. Use marcações como [PAUSA], [EXEMPLO:] para orientar a gravação.]
 ---LEGENDA---
@@ -931,8 +968,12 @@ Tom: direto, linguagem de empresário, sem juridiquês. Foco em dinheiro, gestã
 
 Ao receber um tema, gere EXATAMENTE neste formato:
 
----GANCHO---
-[Uma frase de impacto para os primeiros 3-5 segundos. Foco em dinheiro, imposto ou gestão. Ex: "Sua oficina está pagando imposto a mais todo mês." Máx. 2 linhas.]
+---GANCHO1---
+[Opção 1: Provocação/medo — ex: "Sua oficina está pagando imposto a mais todo mês." Máx. 2 linhas.]
+---GANCHO2---
+[Opção 2: Curiosidade/pergunta — ex: "Você sabe quanto a Reforma Tributária vai custar pra sua oficina?" Máx. 2 linhas.]
+---GANCHO3---
+[Opção 3: Promessa/benefício direto — ex: "Neste vídeo vou te mostrar como economizar imposto na sua oficina." Máx. 2 linhas.]
 ---ROTEIRO---
 [Script completo para falar no vídeo. Linguagem simples e direta — como se estivesse falando com o dono da oficina no balcão. Estrutura: gancho confirmado → problema que o empresário sente → solução prática → CTA. Duração: 60-90 segundos. Use [PAUSA], [EXEMPLO:] para orientar.]
 ---LEGENDA---
@@ -957,12 +998,14 @@ app.post('/api/ana/gerar', async (req, res) => {
 
     const raw = response.content[0].text;
 
-    // Extrai os 3 blocos
-    const gancho  = (raw.match(/---GANCHO---\s*([\s\S]*?)---ROTEIRO---/i)  || [])[1]?.trim() || '';
+    // Extrai os 5 blocos (3 ganchos + roteiro + legenda)
+    const gancho1 = (raw.match(/---GANCHO1---\s*([\s\S]*?)---GANCHO2---/i) || [])[1]?.trim() || '';
+    const gancho2 = (raw.match(/---GANCHO2---\s*([\s\S]*?)---GANCHO3---/i) || [])[1]?.trim() || '';
+    const gancho3 = (raw.match(/---GANCHO3---\s*([\s\S]*?)---ROTEIRO---/i) || [])[1]?.trim() || '';
     const roteiro = (raw.match(/---ROTEIRO---\s*([\s\S]*?)---LEGENDA---/i) || [])[1]?.trim() || '';
     const legenda = (raw.match(/---LEGENDA---\s*([\s\S]*?)---FIM---/i)     || [])[1]?.trim() || '';
 
-    res.json({ ok: true, gancho, roteiro, legenda, raw });
+    res.json({ ok: true, gancho1, gancho2, gancho3, roteiro, legenda, raw });
   } catch (err) {
     console.error('Ana erro:', err.message);
     res.status(500).json({ error: err.message });
@@ -1605,6 +1648,49 @@ app.post('/api/fiscal/regime', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+/* ══════════════════════════════════════════
+   HISTÓRICO DE PIPELINES
+══════════════════════════════════════════ */
+const HISTORY_PATH = path.join(__dirname, 'history.json');
+
+function readHistory() {
+  try { return JSON.parse(fs.readFileSync(HISTORY_PATH, 'utf8')); }
+  catch { return []; }
+}
+function writeHistory(arr) {
+  fs.writeFileSync(HISTORY_PATH, JSON.stringify(arr, null, 2), 'utf8');
+}
+
+app.get('/api/history', (req, res) => {
+  const hist = readHistory().map(h => ({ ...h, copy: undefined, slidesHtml: undefined }));
+  res.json({ history: hist });
+});
+
+app.post('/api/history', (req, res) => {
+  const { profile, pauta, angulo, copyPreview, slidesCount, status } = req.body;
+  const hist = readHistory();
+  const entry = {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    profile: profile || 'franklim',
+    pauta: (pauta || '').slice(0, 200),
+    angulo: (angulo || '').slice(0, 150),
+    copyPreview: (copyPreview || '').slice(0, 300),
+    slidesCount: slidesCount || 0,
+    status: status || 'draft'
+  };
+  hist.unshift(entry);
+  if (hist.length > 50) hist.length = 50;
+  writeHistory(hist);
+  res.json({ ok: true, id: entry.id });
+});
+
+app.delete('/api/history/:id', (req, res) => {
+  const hist = readHistory().filter(h => h.id !== req.params.id);
+  writeHistory(hist);
+  res.json({ ok: true });
 });
 
 /* ══════════════════════════════════════════

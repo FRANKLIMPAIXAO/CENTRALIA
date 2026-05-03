@@ -413,6 +413,23 @@ footer{position:relative;z-index:2;text-align:center;padding:2.5rem;border-top:1
 </head>
 <body>
 
+<div id="login-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#080c14;align-items:center;justify-content:center">
+  <div style="background:#0e1520;border:1px solid #1e2840;border-radius:20px;padding:2.5rem;width:100%;max-width:360px;text-align:center">
+    <div style="font-size:36px;margin-bottom:1rem">🔐</div>
+    <div style="font-size:22px;font-weight:700;color:#fff;margin-bottom:6px">Central <span style="color:#00D4A0">IA</span></div>
+    <div style="font-size:12px;color:#7e8cb0;margin-bottom:1.5rem">Digite a senha para acessar</div>
+    <input id="login-pwd" type="password" placeholder="Senha de acesso"
+      onkeydown="if(event.key==='Enter')doLogin()"
+      style="width:100%;background:#0f1824;border:1px solid #1e2840;border-radius:10px;padding:12px 16px;color:#e8edf8;font-size:14px;outline:none;box-sizing:border-box;margin-bottom:10px">
+    <div id="login-err" style="display:none;color:#ff5c72;font-size:12px;margin-bottom:10px"></div>
+    <button onclick="doLogin()" style="width:100%;background:#00D4A0;border:none;border-radius:10px;padding:12px;color:#000;font-weight:700;font-size:14px;cursor:pointer">
+      Entrar →
+    </button>
+  </div>
+</div>
+
+<div id="app-content">
+
 <header>
   <div class="badge"><span class="badge-dot"></span>SISTEMA ATIVO &nbsp;·&nbsp; CONTEÚDO + INSTAGRAM</div>
   <div class="header-eyebrow">Franklim Paixão</div>
@@ -518,6 +535,21 @@ footer{position:relative;z-index:2;text-align:center;padding:2.5rem;border-top:1
   </div>
 </div>
 
+<!-- ══ HISTÓRICO DE PIPELINES ══ -->
+<div class="module-section" style="margin-top:1rem">
+  <div class="divider module-divider"><div class="dline"></div><div class="dtext">// HISTÓRICO DE CONTEÚDO</div><div class="dline"></div></div>
+  <div style="background:linear-gradient(135deg,#0e1520,#0f1e2e);border:1px solid var(--green-border);border-radius:22px;padding:1.5rem 2rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div>
+        <div style="font-size:11px;color:var(--green);letter-spacing:2px;font-weight:700;margin-bottom:4px">◉ PIPELINES CRIADOS</div>
+        <div style="font-size:1.4rem;font-weight:800;color:#fff">Histórico de <span style="color:var(--green)">Conteúdo</span></div>
+      </div>
+      <button class="module-btn" onclick="loadHistory()" style="font-size:12px;padding:8px 16px">🔄 Atualizar</button>
+    </div>
+    <div id="history-list"><p style="color:var(--text-muted);font-size:13px">Carregando histórico...</p></div>
+  </div>
+</div>
+
 <!-- ══ PIPELINE OVERLAY ══ -->
 <div class="pl-overlay" id="pl-overlay">
   <div class="pl-modal">
@@ -540,6 +572,55 @@ footer{position:relative;z-index:2;text-align:center;padding:2.5rem;border-top:1
 </footer>
 
 <script>
+/* ═══ AUTH ═══ */
+let authToken = localStorage.getItem('cia_token') || '';
+
+async function checkAuth() {
+  try {
+    const res = await fetch('/api/auth/check', {
+      headers: authToken ? { 'Authorization': 'Bearer ' + authToken } : {}
+    });
+    const data = await res.json();
+    if (!data.required) return; // sem senha configurada
+    if (!data.ok) showLogin();
+  } catch(e) { showLogin(); }
+}
+
+function showLogin() {
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('app-content').style.display = 'none';
+}
+function hideLogin() {
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('app-content').style.display = 'block';
+}
+
+async function doLogin() {
+  const pwd = document.getElementById('login-pwd').value;
+  const err = document.getElementById('login-err');
+  err.style.display = 'none';
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password: pwd })
+    });
+    const data = await res.json();
+    if (!res.ok) { err.textContent = data.error; err.style.display = 'block'; return; }
+    authToken = data.token;
+    localStorage.setItem('cia_token', authToken);
+    hideLogin();
+  } catch(e) { err.textContent = 'Erro de conexão.'; err.style.display = 'block'; }
+}
+
+// Injeta token em todos os fetch — monkey patch
+const _origFetch = window.fetch;
+window.fetch = function(url, opts = {}) {
+  if (typeof url === 'string' && url.startsWith('/api') && !url.includes('/auth/')) {
+    opts.headers = { ...(opts.headers || {}), 'Authorization': 'Bearer ' + authToken };
+  }
+  return _origFetch(url, opts);
+};
+
 /* ══════════════════════════════════════════
    CONFIG
 ══════════════════════════════════════════ */
@@ -632,6 +713,7 @@ function closePipeline(){
     const mainBtn  = document.getElementById('pipeline-main-btn');
     if(shortcut) shortcut.style.display = 'block';
     if(mainBtn)  mainBtn.textContent = '↩ Retomar Step 8';
+    saveToHistory('draft');
   }
 }
 
@@ -1769,7 +1851,7 @@ async function gerarAna(){
   document.getElementById('ana-loading').style.display  = 'flex';
   document.getElementById('ana-loading').style.flexDirection = 'column';
   document.getElementById('ana-loading').style.alignItems = 'center';
-  ['ana-gancho-block','ana-roteiro-block','ana-legenda-block'].forEach(id => {
+  ['ana-ganchos-block','ana-roteiro-block','ana-legenda-block'].forEach(id => {
     document.getElementById(id).style.display = 'none';
   });
 
@@ -1783,10 +1865,21 @@ async function gerarAna(){
 
     document.getElementById('ana-loading').style.display = 'none';
 
-    // Gancho
-    if(data.gancho){
-      document.getElementById('ana-gancho-text').textContent = data.gancho;
-      document.getElementById('ana-gancho-block').style.display = 'block';
+    // 3 Ganchos
+    if(data.gancho1 || data.gancho2 || data.gancho3){
+      const list = document.getElementById('ana-ganchos-list');
+      const ganchos = [data.gancho1, data.gancho2, data.gancho3];
+      const labels = ['Provocação / Medo', 'Curiosidade / Pergunta', 'Promessa / Benefício'];
+      list.innerHTML = ganchos.map((g, i) => g ? `
+        <div id="ana-gancho-${i+1}" style="background:linear-gradient(135deg,#1a1506,#1a1800);border:2px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .2s" onclick="anaSelectGancho(${i+1}, ${JSON.stringify(g)})">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:10px;color:var(--yellow);font-weight:700;letter-spacing:1px">OPÇÃO ${i+1} — ${labels[i].toUpperCase()}</span>
+            <button id="ana-gancho-btn-${i+1}" onclick="event.stopPropagation();anaSelectGancho(${i+1}, ${JSON.stringify(g)})" style="background:none;border:1px solid #f5c54240;border-radius:6px;padding:3px 10px;color:var(--yellow);font-size:10px;cursor:pointer">Usar este</button>
+          </div>
+          <div style="font-size:15px;font-weight:600;color:#fff;line-height:1.5;white-space:pre-wrap">${g}</div>
+        </div>` : ''
+      ).join('');
+      document.getElementById('ana-ganchos-block').style.display = 'block';
     }
     // Roteiro
     if(data.roteiro){
@@ -2027,6 +2120,88 @@ async function deleteTrigger(id){
   await fetch(`${API}/api/instagram/triggers/${id}`, { method:'DELETE' });
   loadBiaTriggers();
 }
+
+/* ═══ ANA — SELEÇÃO DE GANCHO ═══ */
+let anaSelectedGancho = '';
+function anaSelectGancho(num, text) {
+  anaSelectedGancho = text;
+  [1,2,3].forEach(n => {
+    const el = document.getElementById(`ana-gancho-${n}`);
+    if(el) el.style.borderColor = n===num ? 'var(--green)' : 'var(--border)';
+  });
+  navigator.clipboard.writeText(text).catch(()=>{});
+  const btn = document.getElementById(`ana-gancho-btn-${num}`);
+  if(btn){ btn.textContent='✓ Copiado!'; setTimeout(()=>btn.textContent='Usar este',1500); }
+}
+
+/* ═══ HISTÓRICO ═══ */
+async function loadHistory() {
+  const el = document.getElementById('history-list');
+  if (!el) return;
+  try {
+    const res  = await fetch(`${API}/api/history`);
+    const data = await res.json();
+    const hist = data.history || [];
+    if (!hist.length) {
+      el.innerHTML = '<p style="color:var(--text-muted);font-size:13px">Nenhum pipeline concluído ainda.</p>';
+      return;
+    }
+    el.innerHTML = hist.map(h => {
+      const prof = PROFILES[h.profile] || PROFILES.franklim;
+      const dt   = new Date(h.createdAt);
+      const when = dt.toLocaleDateString('pt-BR') + ' ' + dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      const statusColor = h.status==='published'?'#00C896':h.status==='scheduled'?'#4f9eff':'#7e8cb0';
+      const statusLabel = h.status==='published'?'Publicado':h.status==='scheduled'?'Agendado':'Rascunho';
+      return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;gap:12px;align-items:flex-start">
+        <div style="font-size:22px;flex-shrink:0">${prof.emoji}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-size:12px;font-weight:700;color:${prof.cor}">${prof.nome}</span>
+            <span style="font-size:10px;color:${statusColor};background:${statusColor}20;border-radius:4px;padding:1px 7px">${statusLabel}</span>
+            <span style="font-size:10px;color:var(--text-muted);margin-left:auto">${when}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.pauta}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${h.copyPreview ? h.copyPreview.slice(0,120)+'...' : ''}</div>
+        </div>
+        <button onclick="deleteHistory('${h.id}')" style="background:none;border:1px solid #ef444440;border-radius:6px;padding:4px 8px;color:#ef4444;font-size:10px;cursor:pointer;flex-shrink:0">🗑</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<p style="color:var(--red);font-size:13px">Erro ao carregar histórico.</p>';
+  }
+}
+
+async function saveToHistory(status = 'draft') {
+  if (!pl.pauta) return;
+  const copyText = pl.copy || '';
+  const copyPreview = copyText.replace(/---COPY---|---HASHTAGS---|---FIM---/gi,'').replace(/\*\*/g,'').trim().slice(0,300);
+  try {
+    await fetch(`${API}/api/history`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        profile: pl.profile,
+        pauta: pl.pauta,
+        angulo: pl.selectedAngulo || '',
+        copyPreview,
+        slidesCount: pl.slidesHtml ? 5 : 0,
+        status
+      })
+    });
+    loadHistory();
+  } catch(e) {}
+}
+
+async function deleteHistory(id) {
+  if (!confirm('Remover do histórico?')) return;
+  await fetch(`${API}/api/history/${id}`, { method: 'DELETE' });
+  loadHistory();
+}
+
+// Carrega histórico ao abrir a página
+setTimeout(loadHistory, 800);
+
+// Inicia verificação de autenticação
+checkAuth();
 </script>
 
 <!-- ══ INSTAGRAM SETTINGS OVERLAY ══ -->
@@ -2331,16 +2506,10 @@ async function deleteTrigger(id){
         <div style="font-size:12px;color:var(--text-muted);margin-top:6px">Gancho · Roteiro · Legenda</div>
       </div>
 
-      <!-- Gancho -->
-      <div id="ana-gancho-block" style="display:none;margin-bottom:1.25rem">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:11px;letter-spacing:2px;font-weight:700;color:var(--yellow)">🎯 GANCHO — PRIMEIROS 3-5 SEGUNDOS</div>
-          <button onclick="anaCopy('ana-gancho-text','ana-copy-gancho')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;color:var(--text-muted);font-size:10px;cursor:pointer">📋 Copiar</button>
-        </div>
-        <div style="background:linear-gradient(135deg,#1a1506,#1a1800);border:1px solid #f5c54240;border-radius:12px;padding:16px 18px">
-          <div id="ana-gancho-text" style="font-size:16px;font-weight:600;color:#fff;line-height:1.5;white-space:pre-wrap"></div>
-        </div>
-        <span id="ana-copy-gancho" style="display:none;font-size:10px;color:var(--green);margin-top:4px">✓ Copiado!</span>
+      <!-- 3 Ganchos -->
+      <div id="ana-ganchos-block" style="display:none;margin-bottom:1.25rem">
+        <div style="font-size:11px;letter-spacing:2px;font-weight:700;color:var(--yellow);margin-bottom:10px">🎯 ESCOLHA O GANCHO — PRIMEIROS 3-5 SEGUNDOS</div>
+        <div id="ana-ganchos-list" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
 
       <!-- Roteiro -->
@@ -2374,5 +2543,6 @@ async function deleteTrigger(id){
   </div>
 </div>
 
+</div><!-- /#app-content -->
 </body>
 </html>
