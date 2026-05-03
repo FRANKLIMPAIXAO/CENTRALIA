@@ -43,7 +43,7 @@ const client   = claude;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
-app.use(express.static('../frontend/public', {
+app.use(express.static(path.join(__dirname, '../frontend/public'), {
   etag: false,
   lastModified: false,
   setHeaders: (res) => {
