@@ -543,7 +543,7 @@ footer{position:relative;z-index:2;text-align:center;padding:2.5rem;border-top:1
 /* ══════════════════════════════════════════
    CONFIG
 ══════════════════════════════════════════ */
-const API = 'http://localhost:3001';
+const API = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
 
 /* ══════════════════════════════════════════
    HELPERS
