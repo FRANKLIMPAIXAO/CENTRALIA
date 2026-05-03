@@ -1,0 +1,8 @@
+{
+  "accessToken": "SEU_TOKEN_AQUI",
+  "igUserId": "SEU_IG_USER_ID",
+  "appId": "SEU_APP_ID",
+  "appSecret": "SEU_APP_SECRET",
+  "imgbbApiKey": "SUA_IMGBB_KEY",
+  "tokenExpiresAt": 0
+}

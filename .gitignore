@@ -1,0 +1,23 @@
+# Segredos — NUNCA commitar
+backend/.env
+backend/instagram-config.json
+backend/autoresponder-config.json
+
+# Dados gerados em runtime (pesados/sensíveis)
+backend/scheduled.json
+backend/replied-comments.json
+backend/autoresponder-log.json
+backend/triggers.json
+
+# Node
+backend/node_modules/
+frontend/node_modules/
+node_modules/
+
+# Logs
+*.log
+/tmp/
+
+# OS
+.DS_Store
+Thumbs.db

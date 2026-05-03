@@ -1,0 +1,2378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central IA — Franklim Paixão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --green:#00D4A0; --green-dim:#00D4A018; --green-border:#00D4A035; --green-glow:#00D4A040;
+  --bg:#080c14; --bg-card:#0e1520; --bg-card2:#121b2a; --bg-modal:#0a1018; --bg-input:#0f1824;
+  --text:#e8edf8; --text-sub:#7e8cb0; --text-muted:#3a4468;
+  --border:#1e2840; --border2:#151f30; --border-hover:#2a3c5c;
+  --red:#ff5c72; --yellow:#f5c542; --blue:#4f9eff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(#ffffff04 1px,transparent 1px),linear-gradient(90deg,#ffffff04 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+body::after{content:'';position:fixed;top:-20vh;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(ellipse,#00D4A012 0%,transparent 70%);pointer-events:none;z-index:0}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.55)}}
+@keyframes blink{0%,80%,100%{opacity:.12}40%{opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scanline{0%{top:-10%}100%{top:110%}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── HEADER ── */
+header{position:relative;z-index:2;text-align:center;padding:5rem 1.5rem 3rem;animation:fadeUp .7s ease both}
+.badge{display:inline-flex;align-items:center;gap:9px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:100px;padding:7px 20px;font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--green);letter-spacing:2.5px;text-transform:uppercase;margin-bottom:1.5rem;backdrop-filter:blur(8px)}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;box-shadow:0 0 8px var(--green)}
+.header-eyebrow{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:6px;text-transform:uppercase;margin-bottom:18px}
+.header-title{font-size:clamp(48px,8vw,72px);font-weight:700;color:#fff;letter-spacing:-3px;line-height:.95;margin-bottom:6px}
+.header-title .accent{color:var(--green)}
+.header-title-sub{font-size:clamp(14px,2.5vw,20px);font-weight:300;color:var(--text-sub);letter-spacing:6px;text-transform:uppercase;margin-bottom:22px;font-family:'JetBrains Mono',monospace}
+.header-desc{font-size:15.5px;color:var(--text-sub);line-height:1.7;max-width:500px;margin:0 auto}
+.header-desc strong{color:var(--text);font-weight:600}
+
+/* ── STATS ── */
+.stats-wrap{position:relative;z-index:2;display:flex;justify-content:center;padding:0 1.5rem;margin-bottom:3.5rem;animation:fadeUp .7s .15s ease both}
+.stats-bar{display:flex;width:100%;max-width:640px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--bg-card)}
+.stat{flex:1;text-align:center;padding:14px 20px;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--green)}
+.stat-lbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px}
+
+/* ── DIVIDER ── */
+.divider{position:relative;z-index:2;display:flex;align-items:center;gap:16px;max-width:1040px;margin:0 auto 2.5rem;padding:0 1.5rem}
+.dline{flex:1;height:1px;background:var(--border)}
+.dtext{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:3px;white-space:nowrap}
+
+/* ── GRID ── */
+.grid{position:relative;z-index:2;display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.25rem;max-width:1040px;margin:0 auto 5rem;padding:0 1.5rem}
+
+/* ── CARD ── */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:1.75rem;cursor:pointer;transition:transform .25s cubic-bezier(.22,1,.36,1),border-color .25s,box-shadow .25s,background .25s;position:relative;overflow:hidden;animation:fadeUp .6s ease both}
+.card:nth-child(1){animation-delay:.05s}.card:nth-child(2){animation-delay:.1s}.card:nth-child(3){animation-delay:.15s}.card:nth-child(4){animation-delay:.2s}.card:nth-child(5){animation-delay:.25s}.card:nth-child(6){animation-delay:.3s}.card:nth-child(7){animation-delay:.35s}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,var(--green) 50%,transparent 100%);opacity:0;transition:opacity .3s}
+.card:hover{transform:translateY(-6px);background:var(--bg-card2);border-color:var(--green-border);box-shadow:0 20px 60px #00000060,0 0 0 1px var(--green-border),0 0 40px var(--green-glow)}
+.card:hover::before{opacity:1}
+.card-scan{position:absolute;left:0;right:0;height:40px;background:linear-gradient(transparent,#00D4A008,transparent);top:-10%;pointer-events:none;opacity:0;transition:opacity .3s}
+.card:hover .card-scan{opacity:1;animation:scanline 1.8s linear infinite}
+.card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
+.card-serial{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-muted);letter-spacing:2px}
+.card-pill{font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--green);background:var(--green-dim);border:1px solid var(--green-border);border-radius:6px;padding:3px 9px;letter-spacing:1.5px}
+.card-icon{width:56px;height:56px;border-radius:16px;background:var(--bg-modal);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:1.25rem;transition:border-color .25s,box-shadow .25s}
+.card:hover .card-icon{border-color:var(--green-border);box-shadow:0 0 20px var(--green-glow)}
+.card-role{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
+.card-title{font-size:22px;font-weight:700;color:#fff;letter-spacing:-.8px;margin-bottom:4px}
+.card-title .accent{color:var(--green)}
+.card-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:1.5rem;margin-top:10px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);background:var(--border2);border:1px solid var(--border);border-radius:5px;padding:3px 8px;letter-spacing:.5px}
+.card-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:11px;border:1px solid var(--green-border);background:var(--green-dim);color:var(--green);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-weight:500;transition:background .18s,color .18s,border-color .18s,box-shadow .18s}
+.card-btn:hover{background:var(--green);border-color:var(--green);color:#000;font-weight:700;box-shadow:0 4px 20px var(--green-glow)}
+.btn-arrow{transition:transform .2s;display:inline-block}
+.card-btn:hover .btn-arrow{transform:translateX(5px)}
+
+/* ── OVERLAY ── */
+.overlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(4,8,16,.92);backdrop-filter:blur(20px);align-items:center;justify-content:center;padding:1rem}
+.overlay.open{display:flex;animation:fadeUp .25s ease}
+
+/* ── MODAL ── */
+.modal{width:100%;max-width:820px;height:90vh;max-height:760px;background:var(--bg-modal);border:1px solid var(--border);border-radius:22px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 1px var(--green-border),0 0 80px #00D4A010,0 40px 100px #00000099}
+
+/* ── TABS ── */
+.modal-tabs{display:flex;border-bottom:1px solid var(--border2);background:rgba(8,12,20,.9);flex-shrink:0}
+.modal-tab{flex:1;padding:12px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);background:none;border:none;cursor:pointer;transition:color .15s,border-color .15s;border-bottom:2px solid transparent;margin-bottom:-1px}
+.modal-tab.active{color:var(--green);border-bottom-color:var(--green)}
+.modal-tab:hover:not(.active){color:var(--text-sub)}
+
+/* ── MODAL HEADER ── */
+.mhead{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border2);background:rgba(8,12,20,.9);flex-shrink:0}
+.mhead-left{display:flex;align-items:center;gap:12px}
+.mavatar{width:44px;height:44px;border-radius:13px;background:var(--bg-card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px}
+.mname{font-size:17px;font-weight:700;color:#fff;line-height:1}
+.mname .accent{color:var(--green)}
+.mrole{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-top:4px}
+.mstatus{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--green);display:flex;align-items:center;gap:5px;margin-top:3px}
+.sdot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+.mhead-right{display:flex;gap:8px}
+.mbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text-sub);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.mbtn:hover{border-color:var(--red);color:var(--red);background:#ff5c7211}
+
+/* ── PAINEL CHAT ── */
+.tab-panel{display:none;flex-direction:column;flex:1;overflow:hidden}
+.tab-panel.active{display:flex}
+
+/* ── MENSAGENS ── */
+.msgs{flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:82%;font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-word;border-radius:18px;padding:13px 17px;animation:fadeUp .2s ease}
+.msg-ai{align-self:flex-start;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg-user{align-self:flex-end;background:var(--green);color:#000;font-weight:600;border-bottom-right-radius:4px}
+.msg-file-badge{display:inline-flex;align-items:center;gap:6px;background:#ffffff12;border:1px solid #ffffff20;border-radius:8px;padding:4px 10px;font-size:11px;margin-bottom:8px;font-family:'JetBrains Mono',monospace;letter-spacing:.5px}
+.typing{align-self:flex-start;background:var(--bg-card);border:1px solid var(--border);padding:14px 18px;border-radius:18px;border-bottom-left-radius:4px;animation:fadeUp .2s ease}
+.dots{display:flex;gap:5px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:blink 1.3s infinite;box-shadow:0 0 4px var(--green)}
+.dot:nth-child(2){animation-delay:.22s}.dot:nth-child(3){animation-delay:.44s}
+
+/* ── INPUT AREA ── */
+.iarea{padding:10px 18px 14px;border-top:1px solid var(--border2);background:rgba(8,12,20,.9);display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.iarea-row{display:flex;gap:10px;align-items:flex-end}
+.cinput{flex:1;background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:12px 16px;border-radius:13px;font-size:14px;font-family:'Space Grotesk',sans-serif;outline:none;resize:none;max-height:130px;min-height:46px;transition:border-color .2s,box-shadow .2s;line-height:1.55}
+.cinput::placeholder{color:var(--text-muted)}
+.cinput:focus{border-color:var(--green-border);box-shadow:0 0 0 3px var(--green-dim)}
+.sbtn{background:var(--green);border:none;color:#000;font-weight:700;padding:12px 22px;border-radius:13px;cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:2px;text-transform:uppercase;white-space:nowrap;transition:opacity .15s,transform .1s,box-shadow .15s;box-shadow:0 4px 20px var(--green-glow)}
+.sbtn:hover{opacity:.88}.sbtn:active{transform:scale(.97)}.sbtn:disabled{opacity:.18;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* Botão de anexo */
+.attach-btn{width:46px;height:46px;border-radius:13px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-sub);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.18s;flex-shrink:0}
+.attach-btn:hover{border-color:var(--green-border);color:var(--green);background:var(--green-dim)}
+
+/* Chip de arquivo anexado */
+.file-chip{display:flex;align-items:center;gap:8px;background:var(--bg-card2);border:1px solid var(--green-border);border-radius:9px;padding:6px 12px;animation:slideIn .2s ease}
+.file-chip-name{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--green);letter-spacing:.5px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
+.file-chip-size{font-size:10px;color:var(--text-muted)}
+.file-chip-remove{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;transition:color .15s}
+.file-chip-remove:hover{color:var(--red)}
+
+/* ── SUGESTÕES ── */
+.suggestions{padding:0 18px 8px;display:flex;gap:8px;flex-wrap:wrap;background:rgba(8,12,20,.9)}
+.sug{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);border:1px solid var(--border);border-radius:8px;padding:5px 11px;cursor:pointer;letter-spacing:.5px;transition:border-color .15s,color .15s,background .15s;white-space:nowrap}
+.sug:hover{border-color:var(--green-border);color:var(--green);background:var(--green-dim)}
+
+/* ── PAINEL KNOWLEDGE BASE ── */
+.kb-panel{flex:1;overflow-y:auto;padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem}
+.kb-header{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:.5rem}
+.kb-desc{font-size:13px;color:var(--text-sub);line-height:1.6;margin-bottom:1.25rem}
+.kb-desc strong{color:var(--text)}
+
+/* Drop zone */
+.dropzone{border:2px dashed var(--border);border-radius:16px;padding:2.5rem;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative}
+.dropzone:hover,.dropzone.drag-over{border-color:var(--green-border);background:var(--green-dim)}
+.dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dropzone-icon{font-size:40px;margin-bottom:12px}
+.dropzone-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
+.dropzone-sub{font-size:12px;color:var(--text-muted)}
+.dropzone-sub span{color:var(--green)}
+
+/* Upload progress */
+.upload-progress{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.up-spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+.up-name{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-sub);flex:1}
+
+/* Lista de docs */
+.kb-list-title{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;padding-bottom:10px;border-bottom:1px solid var(--border2);margin-bottom:10px}
+.kb-empty{font-size:13px;color:var(--text-muted);text-align:center;padding:2rem 0}
+.doc-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;animation:slideIn .2s ease}
+.doc-item:hover{border-color:var(--border-hover)}
+.doc-icon{font-size:22px;flex-shrink:0}
+.doc-info{flex:1;min-width:0}
+.doc-name{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text);letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-meta{font-size:11px;color:var(--text-muted);margin-top:2px}
+.doc-del{background:none;border:none;color:var(--text-muted);font-size:16px;cursor:pointer;padding:4px 8px;border-radius:6px;transition:.15s}
+.doc-del:hover{color:var(--red);background:#ff5c7211}
+.kb-status{font-family:'JetBrains Mono',monospace;font-size:10px;padding:6px 12px;border-radius:8px;margin-top:4px;display:inline-block}
+.kb-status.ok{color:var(--green);background:var(--green-dim);border:1px solid var(--green-border)}
+.kb-status.err{color:var(--red);background:#ff5c7211;border:1px solid #ff5c7233}
+
+/* ── FOOTER ── */
+footer{position:relative;z-index:2;text-align:center;padding:2.5rem;border-top:1px solid var(--border2)}
+.footer-logo{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
+.footer-logo span{color:var(--green)}
+.footer-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase}
+
+@media(max-width:600px){
+  .stats-bar{flex-direction:column}
+  .stat{border-right:none;border-bottom:1px solid var(--border)}
+  .stat:last-child{border-bottom:none}
+  .modal{height:96vh;border-radius:16px}
+  .msg{max-width:92%}
+  .suggestions{display:none}
+}
+
+/* ══════════════════════════════════════════
+   PIPELINE — MÓDULO DE PRODUÇÃO
+══════════════════════════════════════════ */
+.module-section{position:relative;z-index:2;max-width:1040px;margin:0 auto 3rem;padding:0 1.5rem}
+.module-divider{display:flex;align-items:center;gap:16px;margin-bottom:2rem}
+.module-card{background:linear-gradient(135deg,#0e1520 0%,#0f1e2e 100%);border:1px solid var(--green-border);border-radius:22px;padding:2rem;cursor:pointer;position:relative;overflow:hidden;transition:transform .25s cubic-bezier(.22,1,.36,1),box-shadow .25s;animation:fadeUp .6s .4s ease both}
+.module-card:hover{transform:translateY(-5px);box-shadow:0 24px 70px #00000070,0 0 0 1px var(--green-border),0 0 60px var(--green-glow)}
+.module-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#00D4A008 0%,transparent 60%);pointer-events:none}
+.module-inner{display:flex;align-items:center;gap:2rem;flex-wrap:wrap}
+.module-icon-wrap{flex-shrink:0;width:70px;height:70px;border-radius:18px;background:#0a1018;border:1px solid var(--green-border);display:flex;align-items:center;justify-content:center;font-size:34px;box-shadow:0 0 30px var(--green-glow)}
+.module-info{flex:1;min-width:200px}
+.module-badge{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--green);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+.module-title{font-size:26px;font-weight:700;color:#fff;letter-spacing:-1px;margin-bottom:6px}
+.module-title .accent{color:var(--green)}
+.module-desc{font-size:13.5px;color:var(--text-sub);line-height:1.6;max-width:500px}
+.module-steps{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.module-step-badge{font-family:'JetBrains Mono',monospace;font-size:9px;padding:4px 10px;border-radius:6px;letter-spacing:.5px;border:1px solid var(--border)}
+.module-step-badge.user{color:#7e8cb0;background:#1e2840;border-color:#2a3c5c}
+.module-step-badge.ai{color:var(--green);background:var(--green-dim);border-color:var(--green-border)}
+.module-cta{flex-shrink:0}
+.module-btn{display:flex;align-items:center;gap:10px;padding:14px 28px;border-radius:13px;border:1px solid var(--green-border);background:var(--green);color:#000;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;font-weight:700;transition:opacity .15s,box-shadow .15s,transform .1s;box-shadow:0 4px 24px var(--green-glow);white-space:nowrap}
+.module-btn:hover{opacity:.88;box-shadow:0 8px 32px var(--green-glow)}
+.module-btn:active{transform:scale(.97)}
+
+/* ── Pipeline Overlay ── */
+.pl-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(4,8,16,.95);backdrop-filter:blur(24px);align-items:center;justify-content:center;padding:1rem}
+.pl-overlay.open{display:flex;animation:fadeUp .3s ease}
+.pl-modal{width:100%;max-width:900px;height:92vh;max-height:820px;background:var(--bg-modal);border:1px solid var(--green-border);border-radius:24px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 1px var(--green-border),0 0 100px #00D4A015,0 50px 120px #00000099}
+
+/* Step bar */
+.pl-stepbar{flex-shrink:0;padding:18px 24px 0;background:rgba(8,12,20,.95);border-bottom:1px solid var(--border2)}
+.pl-stepbar-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.pl-stepbar-name{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:3px;text-transform:uppercase}
+.pl-close{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-sub);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:.15s}
+.pl-close:hover{border-color:var(--red);color:var(--red);background:#ff5c7211}
+.pl-steps{display:flex;align-items:center;gap:0;padding-bottom:0;overflow-x:auto;scrollbar-width:none}
+.pl-steps::-webkit-scrollbar{display:none}
+.pl-step{display:flex;align-items:center;flex-shrink:0}
+.pl-step-dot{display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 4px 14px;position:relative;cursor:default}
+.pl-step-circle{width:32px;height:32px;border-radius:50%;border:2px solid var(--border);background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:13px;transition:.3s;position:relative;z-index:1}
+.pl-step-circle.done{border-color:var(--green);background:#00D4A022;color:var(--green)}
+.pl-step-circle.active{border-color:var(--green);background:var(--green);color:#000;font-weight:700;box-shadow:0 0 16px var(--green-glow)}
+.pl-step-circle.pending{border-color:var(--border);background:var(--bg-card);color:var(--text-muted)}
+.pl-step-label{font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:1px;text-align:center;white-space:nowrap}
+.pl-step-label.done{color:var(--green)}
+.pl-step-label.active{color:var(--text);font-weight:600}
+.pl-step-label.pending{color:var(--text-muted)}
+.pl-step-type{font-size:8px;color:var(--text-muted);text-align:center;font-family:'JetBrains Mono',monospace}
+.pl-connector{width:28px;height:2px;background:var(--border);margin-bottom:20px;flex-shrink:0;transition:.3s}
+.pl-connector.done{background:var(--green)}
+
+/* Conteúdo do step */
+.pl-body{flex:1;overflow-y:auto;padding:1.75rem 2rem}
+.pl-step-title{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px}
+.pl-step-heading{font-size:22px;font-weight:700;color:#fff;letter-spacing:-.5px;margin-bottom:1.25rem}
+.pl-step-heading .accent{color:var(--green)}
+
+/* Inputs do usuário */
+.pl-textarea{width:100%;background:var(--bg-input);border:1px solid var(--border);color:var(--text);padding:14px 16px;border-radius:14px;font-size:14px;font-family:'Space Grotesk',sans-serif;outline:none;resize:vertical;min-height:100px;transition:border-color .2s,box-shadow .2s;line-height:1.6}
+.pl-textarea::placeholder{color:var(--text-muted)}
+.pl-textarea:focus{border-color:var(--green-border);box-shadow:0 0 0 3px var(--green-dim)}
+
+/* Output da IA */
+.pl-ai-output{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:1.5rem;font-size:14px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-word;animation:fadeUp .2s ease}
+.pl-ai-typing{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px 20px;animation:fadeUp .2s ease}
+.pl-agent-badge{display:inline-flex;align-items:center;gap:8px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:100px;padding:5px 14px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);letter-spacing:1.5px;margin-bottom:1rem}
+.pl-agent-badge .sdot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+
+/* Ângulos de seleção */
+.pl-angulos{display:flex;flex-direction:column;gap:10px;margin-top:1rem}
+.pl-angulo-card{background:var(--bg-card);border:2px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .2s,background .2s;animation:fadeUp .2s ease}
+.pl-angulo-card:hover{border-color:var(--green-border);background:var(--bg-card2)}
+.pl-angulo-card.selected{border-color:var(--green);background:#00D4A010}
+.pl-angulo-num{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--green);letter-spacing:2px;margin-bottom:4px}
+.pl-angulo-text{font-size:13.5px;color:var(--text);line-height:1.6}
+
+/* Slides iframe */
+.pl-slides-wrap{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#080c14;height:400px}
+.pl-slides-wrap iframe{width:100%;height:100%;border:none}
+
+/* Score badge */
+.pl-score{display:inline-flex;align-items:center;gap:10px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:12px;padding:12px 20px;font-size:22px;font-weight:700;color:var(--green);font-family:'JetBrains Mono',monospace;margin-bottom:1rem}
+
+/* Footer ações */
+.pl-footer{flex-shrink:0;padding:14px 24px;border-top:1px solid var(--border2);background:rgba(8,12,20,.9);display:flex;gap:10px;align-items:center;justify-content:space-between}
+.pl-footer-left{display:flex;gap:8px}
+.pl-btn{padding:11px 22px;border-radius:11px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:.18s;border:1px solid;font-weight:600}
+.pl-btn-primary{background:var(--green);border-color:var(--green);color:#000;box-shadow:0 4px 20px var(--green-glow)}
+.pl-btn-primary:hover{opacity:.88}
+.pl-btn-primary:disabled{opacity:.2;cursor:not-allowed}
+.pl-btn-secondary{background:transparent;border-color:var(--border-hover);color:var(--text-sub)}
+.pl-btn-secondary:hover{border-color:var(--green-border);color:var(--green);background:var(--green-dim)}
+.pl-btn-danger{background:transparent;border-color:#ff5c7233;color:var(--red)}
+.pl-btn-danger:hover{background:#ff5c7211}
+.pl-progress-info{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:1.5px}
+
+/* Final */
+.pl-final-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:1rem}
+.pl-final-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px}
+.pl-final-card-title{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--green);letter-spacing:2px;margin-bottom:8px}
+.pl-copy-btn{width:100%;margin-top:10px;padding:9px;border-radius:9px;border:1px solid var(--green-border);background:var(--green-dim);color:var(--green);font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:2px;cursor:pointer;transition:.15s}
+.pl-copy-btn:hover{background:var(--green);color:#000}
+
+/* ── PROPOSTA MODULE ── */
+.prop-tag{background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);font-size:11.5px;padding:5px 11px;border-radius:20px;cursor:pointer;transition:.15s;user-select:none}
+.prop-tag:hover{border-color:#fb923c60;color:#fb923c}
+.prop-tag.selected{background:#fb923c20;border-color:#fb923c80;color:#fb923c;font-weight:600}
+
+/* ── FISCAL MODULE ── */
+.fiscal-tab{background:transparent;border:none;color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:7px 14px;cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+.fiscal-tab.active{color:#5b9bd5;border-bottom-color:#1a6ed8}
+.fiscal-tipo{background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);font-size:11.5px;padding:5px 12px;border-radius:20px;cursor:pointer;transition:.15s}
+.fiscal-tipo.active{background:#1a6ed820;border-color:#1a6ed860;color:#5b9bd5}
+.fiscal-upload{border:2px dashed #1e3a5f;border-radius:14px;padding:28px;text-align:center;cursor:pointer;position:relative;transition:.2s;background:#0d1e3008}
+.fiscal-upload.drag,.fiscal-upload:hover{border-color:#1a6ed8;background:#1a6ed810}
+.fiscal-loading{display:none;align-items:center;gap:10px;padding:10px 0;font-size:12.5px;color:var(--text-muted)}
+.fiscal-loading.active{display:flex}
+.pl-spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:#5b9bd5;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+.fiscal-result-box{background:var(--bg-card);border:1px solid #1e3a5f;border-radius:12px;padding:18px;margin-top:14px;font-size:13px;line-height:1.75;color:var(--text-sub)}
+.fiscal-result-box h2{font-size:13.5px;font-weight:700;color:#5b9bd5;margin:14px 0 5px}
+.fiscal-result-box h3{font-size:12px;font-weight:700;color:var(--text-muted);margin:10px 0 3px}
+.fiscal-result-box strong{color:var(--text)}
+.fiscal-result-box ul,.fiscal-result-box ol{padding-left:18px;margin:4px 0}
+.fiscal-result-box li{margin-bottom:3px}
+.fiscal-doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:12px}
+.fiscal-doc-item{background:#0d1e3060;border:1px solid #1e3a5f;border-radius:8px;padding:10px}
+.fiscal-doc-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:2px}
+.fiscal-doc-value{font-size:12.5px;font-weight:600;color:var(--text)}
+.fiscal-doc-value.money{color:#4ade80}
+
+/* ── INSTAGRAM MODALS ── */
+.ig-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:600;display:none;align-items:center;justify-content:center;padding:20px}
+.ig-overlay.open{display:flex}
+.ig-modal{background:var(--bg-modal);border:1px solid var(--border);border-radius:20px;width:100%;display:flex;flex-direction:column;max-height:90vh;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.6)}
+.ig-section{padding:1.5rem 2rem;overflow-y:auto;flex:1}
+.ig-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;display:block;margin-top:1rem}
+.ig-label:first-child{margin-top:0}
+.ig-input{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;transition:.2s;box-sizing:border-box}
+.ig-input:focus{border-color:var(--green)}
+.ig-btn-row{display:flex;gap:10px;justify-content:flex-end;padding:14px 2rem;border-top:1px solid var(--border);flex-shrink:0}
+.ig-progress-wrap{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.2rem;margin:1rem 0}
+.bia-tab{flex:1;padding:10px 6px;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:.15s;margin-bottom:-1px}
+.bia-tab:hover{color:var(--text-sub)}
+.bia-tab-active{color:var(--green)!important;border-bottom-color:var(--green)!important}
+.ig-progress-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin:8px 0}
+.ig-progress-bar{height:100%;background:var(--green);border-radius:2px;transition:width .3s ease;width:0%}
+.ig-thumb-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:1rem}
+.ig-thumb{width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0}
+.ig-job-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-size:12px}
+.ig-job-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--green);white-space:nowrap}
+.ig-job-badge{font-size:10px;padding:2px 8px;border-radius:4px;border:1px solid var(--green-border);background:var(--green-dim);color:var(--green);white-space:nowrap}
+.ig-job-badge.missed{border-color:#e74c3c44;background:#e74c3c18;color:#e74c3c}
+.ig-job-badge.published{border-color:#27ae6044;background:#27ae6018;color:#27ae60}
+
+/* ══ RESPONSIVO MOBILE ══ */
+@media (max-width: 768px) {
+  header { padding: 3rem 1rem 2rem; }
+  .header-title { font-size: 42px; letter-spacing: -2px; }
+  .header-title-sub { font-size: 11px; letter-spacing: 3px; }
+  .header-desc { font-size: 13px; }
+  .stats-bar { flex-direction: column; }
+  .stat { border-right: none; border-bottom: 1px solid var(--border); }
+  .stat:last-child { border-bottom: none; }
+
+  /* Módulos */
+  .module-inner { flex-direction: column; gap: 1rem; }
+  .module-cta { width: 100%; }
+  .module-btn { width: 100%; text-align: center; }
+  .module-steps { gap: 4px; }
+  .module-step-badge { font-size: 8px; padding: 3px 6px; }
+
+  /* Modal pipeline — full screen no mobile */
+  .modal { max-width: 100%; height: 100vh; max-height: 100vh; border-radius: 0; border: none; }
+  .overlay { padding: 0; align-items: flex-end; }
+  .overlay .modal { border-radius: 20px 20px 0 0; height: 95vh; }
+
+  /* Step bar — scroll horizontal */
+  #pl-steps { overflow-x: auto; padding-bottom: 8px; flex-wrap: nowrap !important; }
+  .pl-step { flex-shrink: 0; }
+  .pl-step-label { font-size: 8px; }
+  .pl-step-circle { width: 28px; height: 28px; font-size: 12px; }
+  .pl-connector { width: 20px; }
+
+  /* Footer pipeline */
+  #pl-footer { flex-wrap: wrap; gap: 6px; padding: 10px 14px; }
+  #pl-footer .pl-btn { flex: 1; min-width: 120px; font-size: 10px; }
+
+  /* Modais IG e Ana — full screen */
+  .ig-overlay { padding: 0; align-items: flex-end; }
+  .ig-modal { border-radius: 20px 20px 0 0; max-height: 92vh; width: 100%; }
+  #ana-overlay .ig-modal { border-radius: 20px 20px 0 0; max-height: 95vh; }
+  #bia-overlay .ig-modal { max-height: 95vh; }
+
+  /* Grids 2 colunas → 1 coluna */
+  #ana-form > div:first-child { grid-template-columns: 1fr !important; }
+
+  /* Bia tabs */
+  .bia-tab { font-size: 8px; padding: 10px 4px; letter-spacing: 0.5px; }
+
+  /* Pipeline body */
+  #pl-body { padding: 1rem; }
+  .pl-step-heading { font-size: 20px; }
+
+  /* Perfil selector no pipeline step 1 */
+  #pl-body > div > div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 480px) {
+  .header-title { font-size: 34px; }
+  .module-icon-wrap { font-size: 28px; }
+  .module-title { font-size: 20px; }
+  .ig-section { padding: 1rem; }
+  .ig-btn-row { padding: 12px 1rem; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge"><span class="badge-dot"></span>SISTEMA ATIVO &nbsp;·&nbsp; CONTEÚDO + INSTAGRAM</div>
+  <div class="header-eyebrow">Franklim Paixão</div>
+  <h1 class="header-title">Central <span class="accent">IA</span></h1>
+  <div class="header-title-sub">Família TributáriAI</div>
+</header>
+
+<!-- ══ MÓDULO PIPELINE ══ -->
+<div class="module-section">
+  <div class="divider module-divider"><div class="dline"></div><div class="dtext">// MÓDULO DE PRODUÇÃO</div><div class="dline"></div></div>
+  <div class="module-card" onclick="openPipeline()">
+    <div class="module-inner">
+      <div class="module-icon-wrap">🎬</div>
+      <div class="module-info">
+        <div class="module-badge">◉ PIPELINE MULTI-AGENTE · CLAUDE + GEMINI</div>
+        <div class="module-title">Criador de <span class="accent">Conteúdo</span></div>
+        <div class="module-desc">Workflow guiado em 8 etapas com agentes especializados. Do briefing ao post aprovado, com IA em cada fase.</div>
+        <div class="module-steps">
+          <span class="module-step-badge user">1 · Pauta</span>
+          <span class="module-step-badge ai">2 · Sofia</span>
+          <span class="module-step-badge user">3 · Ângulo</span>
+          <span class="module-step-badge ai">4 · Carlos</span>
+          <span class="module-step-badge user">5 · Copy</span>
+          <span class="module-step-badge ai">6 · Davi</span>
+          <span class="module-step-badge ai">7 · Vera</span>
+          <span class="module-step-badge user">8 · Final</span>
+        </div>
+      </div>
+      <div class="module-cta">
+        <button class="module-btn" id="pipeline-main-btn" onclick="event.stopPropagation();openPipeline()">Iniciar Pipeline <span>→</span></button>
+        <div id="pipeline-ig-shortcut" style="display:none;margin-top:8px">
+          <button class="module-btn" onclick="event.stopPropagation();openPipeline()" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);border-color:transparent;font-size:11px;padding:6px 12px">
+            📸 Voltar e Publicar no Instagram
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ANA — CRIADORA DE VÍDEOS ══ -->
+<div class="module-section" style="margin-top:1rem">
+  <div class="divider module-divider"><div class="dline"></div><div class="dtext">// CRIAÇÃO DE VÍDEOS</div><div class="dline"></div></div>
+  <div class="module-card" onclick="openAna()" style="cursor:pointer">
+    <div class="module-inner">
+      <div class="module-icon-wrap">🎬</div>
+      <div class="module-info">
+        <div class="module-badge">◉ ANA · ROTEIRISTA IA · CLAUDE</div>
+        <div class="module-title">Ana — Vídeos <span class="accent">& Reels</span></div>
+        <div class="module-desc">Dê o tema, Ana cria o gancho que para o scroll, o roteiro completo para você falar e a legenda pronta para o Instagram.</div>
+        <div class="module-steps">
+          <span class="module-step-badge user">Tema</span>
+          <span class="module-step-badge ai">🎯 Gancho</span>
+          <span class="module-step-badge ai">📝 Roteiro</span>
+          <span class="module-step-badge ai">📱 Legenda</span>
+        </div>
+      </div>
+      <div class="module-cta">
+        <button class="module-btn" onclick="event.stopPropagation();openAna()">Criar conteúdo <span>→</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BIA — AUTO-RESPONDER ══ -->
+<div class="module-section" style="margin-top:1rem">
+  <div class="divider module-divider"><div class="dline"></div><div class="dtext">// ENGAJAMENTO AUTOMÁTICO</div><div class="dline"></div></div>
+  <div class="module-card" onclick="openBia()" style="cursor:pointer">
+    <div class="module-inner">
+      <div class="module-icon-wrap">💬</div>
+      <div class="module-info">
+        <div class="module-badge" id="bia-status-badge">◎ BIA · AUTO-RESPONDER · CARREGANDO...</div>
+        <div class="module-title">Respondedor <span class="accent">IA</span></div>
+        <div class="module-desc">Bia responde automaticamente os comentários do Instagram — como ManyChat, mas com IA. Detecta tom, contexto e responde de forma humana.</div>
+        <div class="module-steps">
+          <span class="module-step-badge ai">Detecta comentário</span>
+          <span class="module-step-badge ai">IA gera resposta</span>
+          <span class="module-step-badge ai">Posta no Instagram</span>
+        </div>
+      </div>
+      <div class="module-cta">
+        <button class="module-btn" id="bia-toggle-btn" onclick="event.stopPropagation();toggleBia()" style="min-width:120px">Carregar...</button>
+        <button class="module-btn" onclick="event.stopPropagation();openBia()" style="margin-top:8px;font-size:11px;padding:6px 14px;background:transparent;border-color:var(--border)">⚙️ Configurar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CALENDÁRIO DE AGENDAMENTOS ══ -->
+<div class="module-section" style="margin-top:1rem">
+  <div class="divider module-divider"><div class="dline"></div><div class="dtext">// AGENDAMENTOS INSTAGRAM</div><div class="dline"></div></div>
+  <div id="ig-calendar-section" style="background:linear-gradient(135deg,#0e1520,#0f1e2e);border:1px solid var(--green-border);border-radius:22px;padding:1.5rem 2rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div>
+        <div style="font-size:11px;color:var(--green);letter-spacing:2px;font-weight:700;margin-bottom:4px">◉ INSTAGRAM · PUBLICAÇÕES AGENDADAS</div>
+        <div style="font-size:1.4rem;font-weight:800;color:#fff">Calendário de <span style="color:var(--green)">Posts</span></div>
+      </div>
+      <button class="module-btn" onclick="loadCalendarJobs()" style="font-size:12px;padding:8px 16px">🔄 Atualizar</button>
+    </div>
+    <div id="ig-calendar-list">
+      <p style="color:var(--text-muted);font-size:13px">Carregando agendamentos...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PIPELINE OVERLAY ══ -->
+<div class="pl-overlay" id="pl-overlay">
+  <div class="pl-modal">
+    <div class="pl-stepbar">
+      <div class="pl-stepbar-title">
+        <span class="pl-stepbar-name">🎬 Pipeline de Conteúdo</span>
+        <button class="pl-close" onclick="closePipeline()">✕</button>
+      </div>
+      <div class="pl-steps" id="pl-steps"></div>
+    </div>
+    <div class="pl-body" id="pl-body"></div>
+    <div class="pl-footer" id="pl-footer"></div>
+  </div>
+</div>
+
+
+<footer>
+  <div class="footer-logo">Franklim <span>Paixão</span></div>
+  <div class="footer-sub">Família TributáriAI &nbsp;·&nbsp; Central IA &nbsp;·&nbsp; Powered by Claude</div>
+</footer>
+
+<script>
+/* ══════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════ */
+const API = 'http://localhost:3001';
+
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function formatText(txt){
+  let s = esc(String(txt));
+  s = s.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+  s = s.replace(/`([^`]+)`/g,'<code style="background:#1e2840;padding:1px 5px;border-radius:4px;font-family:\'JetBrains Mono\',monospace;font-size:12px">$1</code>');
+  return s;
+}
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ══════════════════════════════════════════
+   PIPELINE — DEFINIÇÕES
+══════════════════════════════════════════ */
+const PL_STEPS_DEF = [
+  { n:1, type:'user', label:'Pauta',   icon:'✏️',  title:'Definição de Pauta',        heading:'Qual é o tema do conteúdo?' },
+  { n:2, type:'ai',   label:'Sofia',   icon:'🎯',  title:'Sofia → 5 Ângulos',         agent:'sofia', heading:'Sofia está criando os ângulos...' },
+  { n:3, type:'user', label:'Ângulo',  icon:'👆',  title:'Seleção de Ângulo',          heading:'Escolha o ângulo para o conteúdo' },
+  { n:4, type:'ai',   label:'Carlos',  icon:'✍️',  title:'Carlos → Copy Completo',     agent:'carlos', heading:'Carlos está escrevendo o copy...' },
+  { n:5, type:'user', label:'Copy',    icon:'✅',  title:'Aprovação do Copy',          heading:'Revise e aprove o copy' },
+  { n:6, type:'ai',   label:'Davi',    icon:'🎨',  title:'Davi → Slides HTML',         agent:'davi', heading:'Davi está criando os slides...' },
+  { n:7, type:'ai',   label:'Vera',    icon:'🔍',  title:'Vera → Review & Score',      agent:'vera', heading:'Vera está revisando o conteúdo...' },
+  { n:8, type:'user', label:'Final',   icon:'🏆',  title:'Aprovação Final',            heading:'Conteúdo pronto para publicar!' },
+];
+
+let pl = {
+  step: 1, loading: false, profile: '',
+  pauta: '', angulos: '', selectedAngulo: '', anguloIdx: -1,
+  copy: '', copyFeedback: '', slidesHtml: '', slidesEngine: '', daviError: '', review: ''
+};
+
+/* Perfis disponíveis */
+const PROFILES = {
+  franklim: {
+    id: 'franklim',
+    nome: 'Franklim Paixão',
+    sub: 'Reforma Tributária & IA para Contadores',
+    emoji: '📊',
+    cor: '#00C896',
+    corBg: '#00C89615',
+    corBorder: '#00C89640',
+    publico: 'Contadores e escritórios contábeis',
+  },
+  pac: {
+    id: 'pac',
+    nome: 'PAC Inteligência Tributária',
+    sub: 'Oficinas Mecânicas & Autopeças',
+    emoji: '🔧',
+    cor: '#F97316',
+    corBg: '#F9731615',
+    corBorder: '#F9731640',
+    publico: 'Donos de oficinas e lojas de autopeças',
+  }
+};
+
+// Instagram state
+let igCapturedImages = [];
+let igPublishing     = false;
+
+/* ── Abrir / Fechar ── */
+function openPipeline(){
+  if(pl.step === 8){
+    document.getElementById('pl-overlay').classList.add('open');
+    renderPipeline();
+    return;
+  }
+  pl = { step:1, loading:false, profile:'', pauta:'', angulos:'', selectedAngulo:'', anguloIdx:-1, copy:'', copyFeedback:'', slidesHtml:'', slidesEngine:'', daviError:'', review:'' };
+  document.getElementById('pl-overlay').classList.add('open');
+  renderPipeline();
+}
+function newPipeline(){
+  pl = { step:1, loading:false, profile:'', pauta:'', angulos:'', selectedAngulo:'', anguloIdx:-1, copy:'', copyFeedback:'', slidesHtml:'', slidesEngine:'', daviError:'', review:'' };
+  renderPipeline();
+}
+function selectProfile(profileId){
+  pl.profile = profileId;
+  renderPipeline();
+}
+function closePipeline(){
+  document.getElementById('pl-overlay').classList.remove('open');
+  // Se pipeline concluído, mostrar atalho Instagram no card principal
+  if(pl.step === 8){
+    const shortcut = document.getElementById('pipeline-ig-shortcut');
+    const mainBtn  = document.getElementById('pipeline-main-btn');
+    if(shortcut) shortcut.style.display = 'block';
+    if(mainBtn)  mainBtn.textContent = '↩ Retomar Step 8';
+  }
+}
+
+/* ── Render geral ── */
+function renderPipeline(){
+  renderStepBar();
+  renderStepBody();
+  renderStepFooter();
+}
+
+/* ── Step Bar ── */
+function renderStepBar(){
+  const el = document.getElementById('pl-steps');
+  el.innerHTML = PL_STEPS_DEF.map((s,i)=>{
+    const state = s.n < pl.step ? 'done' : s.n === pl.step ? 'active' : 'pending';
+    const icon  = state==='done' ? '✓' : s.icon;
+    const conn  = i < PL_STEPS_DEF.length-1
+      ? `<div class="pl-connector ${s.n < pl.step ? 'done':''}"></div>` : '';
+    return `<div class="pl-step">
+      <div class="pl-step-dot">
+        <div class="pl-step-circle ${state}">${icon}</div>
+        <div class="pl-step-label ${state}">${s.label}</div>
+        <div class="pl-step-type">${s.type==='ai'?'IA':'você'}</div>
+      </div>${conn}
+    </div>`;
+  }).join('');
+}
+
+/* ── Body por step ── */
+function renderStepBody(){
+  const s   = PL_STEPS_DEF[pl.step-1];
+  const el  = document.getElementById('pl-body');
+
+  // Step 1 — Seleção de perfil + Pauta
+  if(pl.step===1){
+    const prof = pl.profile ? PROFILES[pl.profile] : null;
+    el.innerHTML=`
+      <div class="pl-step-title">ETAPA 1 DE 8</div>
+      <div class="pl-step-heading">${s.heading}</div>
+
+      <!-- Seletor de perfil -->
+      <p style="font-size:12px;color:var(--text-muted);letter-spacing:1px;font-weight:700;margin-bottom:10px;text-transform:uppercase">Selecione o perfil da empresa</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem">
+        ${Object.values(PROFILES).map(p=>{
+          const sel = pl.profile === p.id;
+          return `<div onclick="selectProfile('${p.id}')" style="cursor:pointer;border:2px solid ${sel ? p.cor : 'var(--border)'};border-radius:12px;padding:14px 16px;background:${sel ? p.corBg : 'var(--bg-card)'};transition:all .2s">
+            <div style="font-size:22px;margin-bottom:6px">${p.emoji}</div>
+            <div style="font-size:13px;font-weight:700;color:${sel ? p.cor : 'var(--text)'}">${p.nome}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${p.sub}</div>
+            <div style="font-size:10px;color:${p.cor};margin-top:6px;font-weight:600">↳ Para: ${p.publico}</div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      ${prof ? `
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:.75rem;line-height:1.6">
+        Descreva o tema ou assunto. Quanto mais detalhe, melhores os ângulos que Sofia vai criar.
+      </p>
+      <textarea class="pl-textarea" id="pl-input" placeholder="${prof.id==='pac'
+        ? 'Ex: Reforma Tributária e o impacto nas oficinas mecânicas — o que muda no Simples Nacional para quem vende peças e faz serviço...'
+        : 'Ex: Reforma Tributária para contadores — os 5 pontos que todo escritório precisa dominar antes de 2026...'
+      }" rows="5">${pl.pauta}</textarea>` : `
+      <p style="font-size:13px;color:var(--text-muted);text-align:center;padding:1.5rem 0">
+        👆 Selecione um perfil acima para continuar
+      </p>`}`;
+    if(prof) setTimeout(()=>document.getElementById('pl-input')?.focus(),80);
+  }
+
+  // Step 2 — Sofia gerando
+  else if(pl.step===2){
+    if(pl.loading){
+      el.innerHTML=`
+        <div class="pl-step-title">ETAPA 2 DE 8</div>
+        <div class="pl-step-heading"><span class="accent">Sofia</span> está criando os ângulos</div>
+        <div class="pl-agent-badge"><span class="sdot"></span>SOFIA · ESTRATEGISTA DE CONTEÚDO</div>
+        <div class="pl-ai-typing"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>`;
+    } else {
+      el.innerHTML=`
+        <div class="pl-step-title">ETAPA 2 DE 8</div>
+        <div class="pl-step-heading"><span class="accent">Sofia</span> criou 5 ângulos</div>
+        <div class="pl-agent-badge"><span class="sdot"></span>SOFIA · ESTRATEGISTA DE CONTEÚDO</div>
+        <div class="pl-ai-output">${formatText(pl.angulos)}</div>`;
+    }
+  }
+
+  // Step 3 — Seleção de ângulo
+  else if(pl.step===3){
+    const parsed = parseAngulos(pl.angulos);
+    el.innerHTML=`
+      <div class="pl-step-title">ETAPA 3 DE 8</div>
+      <div class="pl-step-heading">${s.heading}</div>
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:1rem">Clique no ângulo que você quer desenvolver:</p>
+      <div class="pl-angulos">
+        ${parsed.map((a,i)=>`
+          <div class="pl-angulo-card ${pl.anguloIdx===i?'selected':''}" onclick="selectAngulo(${i})">
+            <div class="pl-angulo-num">ÂNGULO ${i+1}</div>
+            <div class="pl-angulo-text">${formatText(a)}</div>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  // Step 4 — Carlos escrevendo
+  else if(pl.step===4){
+    if(pl.loading){
+      el.innerHTML=`
+        <div class="pl-step-title">ETAPA 4 DE 8</div>
+        <div class="pl-step-heading"><span class="accent">Carlos</span> está escrevendo o copy</div>
+        <div class="pl-agent-badge"><span class="sdot"></span>CARLOS · COPYWRITER</div>
+        <div class="pl-ai-typing"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>`;
+    } else {
+      el.innerHTML=`
+        <div class="pl-step-title">ETAPA 4 DE 8</div>
+        <div class="pl-step-heading"><span class="accent">Carlos</span> escreveu o copy</div>
+        <div class="pl-agent-badge"><span class="sdot"></span>CARLOS · COPYWRITER</div>
+        <div class="pl-ai-output">${formatText(pl.copy)}</div>`;
+    }
+  }
+
+  // Step 5 — Aprovação do copy
+  else if(pl.step===5){
+    el.innerHTML=`
+      <div class="pl-step-title">ETAPA 5 DE 8</div>
+      <div class="pl-step-heading">${s.heading}</div>
+      <div class="pl-agent-badge">✍️ &nbsp;COPY — CARLOS</div>
+      <div class="pl-ai-output" style="max-height:280px;overflow-y:auto">${formatText(pl.copy)}</div>
+      <p style="font-size:13px;color:var(--text-sub);margin:1rem 0 .5rem">Quer solicitar ajustes? Descreva abaixo (opcional):</p>
+      <textarea class="pl-textarea" id="pl-feedback" placeholder="Ex: Deixe o tom mais descontraído, adicione um dado estatístico na abertura..." rows="3">${pl.copyFeedback}</textarea>`;
+  }
+
+  // Step 6 — Davi slides
+  else if(pl.step===6){
+    const engineLabel = pl.slidesEngine === 'claude-fallback'
+      ? 'DAVI · CLAUDE (FALLBACK)'
+      : 'DAVI · GEMINI 2.0 FLASH';
+    if(pl.loading){
+      el.innerHTML=`
+        <div class="pl-step-title">ETAPA 6 DE 8</div>
+        <div class="pl-step-heading"><span class="accent">Davi</span> está criando os slides</div>
+        <div class="pl-agent-badge"><span class="sdot"></span>DAVI · GEMINI 2.0 FLASH</div>
+        <div class="pl-ai-typing"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>`;
+    } else if(pl.slidesHtml) {
+      const blob = new Blob([pl.slidesHtml],{type:'text/html'});
+      const url  = URL.createObjectURL(blob);
+      el.innerHTML=`
+        <div class="pl-step-title">ETAPA 6 DE 8</div>
+        <div class="pl-step-heading"><span class="accent">Davi</span> criou os slides</div>
+        <div class="pl-agent-badge"><span class="sdot"></span>${engineLabel}</div>
+        <div class="pl-slides-wrap"><iframe src="${url}" sandbox="allow-scripts"></iframe></div>`;
+    } else {
+      el.innerHTML=`
+        <div class="pl-step-title">ETAPA 6 DE 8</div>
+        <div class="pl-step-heading"><span class="accent">Davi</span> — aguardando geração</div>
+        <div class="pl-agent-badge" style="border-color:#e74c3c;color:#e74c3c"><span style="color:#e74c3c">●</span> DAVI · ERRO</div>
+        <div class="pl-ai-output" style="color:#e74c3c;margin-top:12px">
+          ⚠️ ${pl.daviError ? esc(pl.daviError.slice(0,200)) : 'Erro ao gerar slides. Tente novamente.'}<br><br>
+          <button class="pl-btn pl-btn-primary" onclick="retryDavi()">🔄 Tentar novamente</button>
+        </div>`;
+    }
+  }
+
+  // Step 7 — Vera review
+  else if(pl.step===7){
+    if(pl.loading){
+      el.innerHTML=`
+        <div class="pl-step-title">ETAPA 7 DE 8</div>
+        <div class="pl-step-heading"><span class="accent">Vera</span> está revisando</div>
+        <div class="pl-agent-badge"><span class="sdot"></span>VERA · REVISORA</div>
+        <div class="pl-ai-typing"><div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div></div>`;
+    } else {
+      const score = (pl.review.match(/(\d+(?:\.\d+)?)\s*\/\s*10/)||[])[1];
+      el.innerHTML=`
+        <div class="pl-step-title">ETAPA 7 DE 8</div>
+        <div class="pl-step-heading"><span class="accent">Vera</span> avaliou o conteúdo</div>
+        <div class="pl-agent-badge"><span class="sdot"></span>VERA · REVISORA</div>
+        ${score?`<div class="pl-score">🏆 ${score}/10</div>`:''}
+        <div class="pl-ai-output">${formatText(pl.review)}</div>`;
+    }
+  }
+
+  // Step 8 — Final
+  else if(pl.step===8){
+    el.innerHTML=`
+      <div class="pl-step-title">ETAPA 8 DE 8 — CONCLUÍDO</div>
+      <div class="pl-step-heading">🏆 Conteúdo <span class="accent">aprovado!</span></div>
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:1.25rem">Seu pipeline de conteúdo foi concluído com sucesso. Copie o que precisar abaixo.</p>
+      <div class="pl-final-grid">
+        <div class="pl-final-card">
+          <div class="pl-final-card-title">✏️ PAUTA</div>
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6">${esc(pl.pauta).slice(0,200)}${pl.pauta.length>200?'...':''}</div>
+        </div>
+        <div class="pl-final-card">
+          <div class="pl-final-card-title">🎯 ÂNGULO ESCOLHIDO</div>
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6">${formatText(pl.selectedAngulo).slice(0,300)}</div>
+        </div>
+      </div>
+      <div class="pl-final-card" style="margin-top:12px">
+        <div class="pl-final-card-title">✍️ COPY FINAL — CARLOS</div>
+        <div style="font-size:13px;color:var(--text);line-height:1.7;max-height:180px;overflow-y:auto">${formatText(pl.copy)}</div>
+        <button class="pl-copy-btn" onclick="copyToClipboard(pl.copy,'copy-ok')">📋 Copiar copy</button>
+        <span id="copy-ok" style="font-size:11px;color:var(--green);margin-left:8px;display:none">✓ Copiado!</span>
+      </div>
+      ${pl.slidesHtml?`
+      <div class="pl-final-card" style="margin-top:12px">
+        <div class="pl-final-card-title">🎨 SLIDES — DAVI</div>
+        <button class="pl-copy-btn" onclick="downloadSlides()">💾 Baixar slides HTML</button>
+      </div>`:''}
+      ${(()=>{
+        const prof8 = pl.profile ? PROFILES[pl.profile] : null;
+        const profLabel = prof8 ? `<span style="font-size:11px;color:${prof8.cor};background:${prof8.corBg};border:1px solid ${prof8.corBorder};border-radius:6px;padding:2px 8px;margin-left:8px">${prof8.emoji} ${prof8.nome}</span>` : '';
+        return `<div class="pl-final-card" style="margin-top:16px;border-color:#833ab455">
+        <div class="pl-final-card-title" style="color:#fd1d1d;display:flex;align-items:center;flex-wrap:wrap;gap:4px">📱 PUBLICAR NO INSTAGRAM${profLabel}</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px">
+          <button class="pl-btn pl-btn-primary" onclick="openIgPublish(false)"
+                  style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);border-color:transparent;color:#fff">
+            📸 Publicar agora
+          </button>
+          <button class="pl-btn pl-btn-secondary" onclick="openIgPublish(true)">
+            🗓️ Agendar
+          </button>
+          <button class="pl-btn pl-btn-secondary" onclick="openIgSettings()" style="margin-left:auto">
+            ⚙️ Configurar
+          </button>
+        </div>
+        <div id="ig-scheduled-list" style="margin-top:1rem"></div>
+      </div>`;
+      })()}`;
+    setTimeout(loadScheduledJobs, 100);
+  }
+}
+
+/* ── Footer por step ── */
+function renderStepFooter(){
+  const el = document.getElementById('pl-footer');
+  const pct = Math.round(((pl.step-1)/7)*100);
+
+  const progressHtml = `<span class="pl-progress-info">STEP ${pl.step}/8 &nbsp;·&nbsp; ${pct}%</span>`;
+
+  if(pl.step===1){
+    el.innerHTML=`${progressHtml}<div><button class="pl-btn pl-btn-primary" onclick="plNext()" ${!pl.profile?'disabled':''}>Enviar para Sofia →</button></div>`;
+  } else if(pl.step===2){
+    el.innerHTML=`${progressHtml}<div><button class="pl-btn pl-btn-primary" onclick="plNext()" ${pl.loading||!pl.angulos?'disabled':''}>Selecionar ângulo →</button></div>`;
+  } else if(pl.step===3){
+    el.innerHTML=`${progressHtml}<div><button class="pl-btn pl-btn-secondary" onclick="plBack()">← Refazer pauta</button>&nbsp;<button class="pl-btn pl-btn-primary" onclick="plNext()" ${pl.anguloIdx<0?'disabled':''}>Enviar para Carlos →</button></div>`;
+  } else if(pl.step===4){
+    el.innerHTML=`${progressHtml}<div><button class="pl-btn pl-btn-primary" onclick="plNext()" ${pl.loading||!pl.copy?'disabled':''}>Revisar copy →</button></div>`;
+  } else if(pl.step===5){
+    el.innerHTML=`${progressHtml}<div class="pl-footer-left"><button class="pl-btn pl-btn-danger" onclick="plRefazerCarlos()">🔄 Pedir ajustes</button></div><button class="pl-btn pl-btn-primary" onclick="plNext()">✅ Aprovar → Davi</button>`;
+  } else if(pl.step===6){
+    el.innerHTML=`${progressHtml}<div><button class="pl-btn pl-btn-primary" onclick="plNext()" ${pl.loading||!pl.slidesHtml?'disabled':''}>Enviar para Vera →</button></div>`;
+  } else if(pl.step===7){
+    el.innerHTML=`${progressHtml}<div><button class="pl-btn pl-btn-primary" onclick="plNext()" ${pl.loading||!pl.review?'disabled':''}>Aprovação Final →</button></div>`;
+  } else if(pl.step===8){
+    el.innerHTML=`${progressHtml}<div><button class="pl-btn pl-btn-secondary" onclick="newPipeline()">🔄 Novo pipeline</button>&nbsp;<button class="pl-btn pl-btn-primary" onclick="closePipeline()">✅ Concluir</button></div>`;
+  }
+}
+
+/* ── Navegação ── */
+function plBack(){ if(pl.step>1){ pl.step--; renderPipeline(); } }
+
+async function plNext(){
+  const s = PL_STEPS_DEF[pl.step-1];
+
+  // Coleta input do usuário
+  if(pl.step===1){
+    if(!pl.profile) return;
+    const v = document.getElementById('pl-input')?.value.trim();
+    if(!v) return;
+    pl.pauta = v;
+    pl.step = 2;
+    renderPipeline();
+    await runAI('sofia');
+    return;
+  }
+  if(pl.step===2){ pl.step=3; renderPipeline(); return; }
+  if(pl.step===3){
+    if(pl.anguloIdx<0) return;
+    pl.step=4; renderPipeline();
+    await runAI('carlos');
+    return;
+  }
+  if(pl.step===4){ pl.step=5; renderPipeline(); return; }
+  if(pl.step===5){
+    pl.step=6; renderPipeline();
+    await runAI('davi');
+    return;
+  }
+  if(pl.step===6){ pl.step=7; renderPipeline(); await runAI('vera'); return; }
+  if(pl.step===7){ pl.step=8; renderPipeline(); return; }
+  if(pl.step===8){ closePipeline(); return; }
+}
+
+async function plRefazerCarlos(){
+  const feedback = document.getElementById('pl-feedback')?.value.trim();
+  pl.copyFeedback = feedback;
+  pl.step=4; renderPipeline();
+  await runAI('carlos', true);
+}
+
+async function retryDavi(){
+  pl.daviError = '';
+  pl.slidesHtml = '';
+  await runAI('davi');
+}
+
+/* ── Selecionar ângulo ── */
+function selectAngulo(idx){
+  const parsed = parseAngulos(pl.angulos);
+  pl.anguloIdx     = idx;
+  pl.selectedAngulo= parsed[idx] || pl.angulos;
+  renderStepBody();
+  renderStepFooter();
+}
+
+/* ── Chamar IA ── */
+async function runAI(agent, retry=false){
+  pl.loading = true;
+  renderPipeline();
+
+  const messages = buildMessages(agent, retry);
+
+  try {
+    const res  = await fetch(`${API}/api/pipeline/${agent}`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ messages, profile: pl.profile })
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+
+    if(agent==='sofia')  pl.angulos    = data.reply;
+    if(agent==='carlos') pl.copy       = data.reply;
+    if(agent==='davi') {
+      pl.slidesHtml  = extractHtml(data.reply);
+      pl.slidesEngine= data.engine || 'gemini-2.0-flash';
+      pl.daviError   = '';
+    }
+    if(agent==='vera')   pl.review    = data.reply;
+  } catch(e){
+    if(agent==='sofia')  pl.angulos   = `⚠️ Erro: ${e.message}`;
+    if(agent==='carlos') pl.copy      = `⚠️ Erro: ${e.message}`;
+    if(agent==='davi') { pl.slidesHtml = ''; pl.daviError = e.message; }
+    if(agent==='vera')   pl.review    = `⚠️ Erro: ${e.message}`;
+  }
+
+  pl.loading = false;
+  renderPipeline();
+}
+
+function buildMessages(agent, retry){
+  if(agent==='sofia'){
+    return [{ role:'user', content:`PAUTA: ${pl.pauta}\n\nCrie 5 ângulos criativos para esta pauta.` }];
+  }
+  if(agent==='carlos'){
+    const base = `PAUTA: ${pl.pauta}\n\nÂNGULO SELECIONADO:\n${pl.selectedAngulo}`;
+    if(retry && pl.copyFeedback)
+      return [
+        { role:'user',      content: base+'\n\nEscreva o copy completo.' },
+        { role:'assistant', content: pl.copy },
+        { role:'user',      content:`Preciso que você ajuste o copy. Feedback: ${pl.copyFeedback}` }
+      ];
+    return [{ role:'user', content: base+'\n\nEscreva o copy completo e pronto para publicar.' }];
+  }
+  if(agent==='davi'){
+    return [{ role:'user', content:`Crie slides HTML para este conteúdo:\n\n${pl.copy}` }];
+  }
+  if(agent==='vera'){
+    return [{ role:'user', content:`Revise e avalie este conteúdo:\n\nPAUTA: ${pl.pauta}\n\nCOPY:\n${pl.copy}` }];
+  }
+  return [];
+}
+
+/* ── Helpers ── */
+function parseAngulos(text){
+  // Divide em ÂNGULO 1, 2, 3...
+  const parts = text.split(/(?=\*?\*?ÂNGULO\s+\d)/i).filter(p=>p.trim().length>20);
+  if(parts.length>=4) return parts.slice(0,5).map(p=>p.trim());
+  // fallback numérico
+  const nums = text.split(/(?=\d+[\.·]\s)/);
+  if(nums.length>=4) return nums.slice(0,5).map(p=>p.trim());
+  // last resort: split em 5 partes iguais
+  const lines = text.split('\n\n').filter(l=>l.trim());
+  if(lines.length>=5) return lines.slice(0,5);
+  return [text];
+}
+
+function extractHtml(text){
+  const m = text.match(/```html\n?([\s\S]+?)```/i);
+  return m ? m[1].trim() : text;
+}
+
+function copyToClipboard(text, okId){
+  navigator.clipboard.writeText(text).then(()=>{
+    const el = document.getElementById(okId);
+    if(el){ el.style.display='inline'; setTimeout(()=>el.style.display='none',2000); }
+  });
+}
+
+function downloadSlides(){
+  const blob = new Blob([pl.slidesHtml],{type:'text/html'});
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'slides-conteudo.html';
+  a.click();
+}
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('pl-overlay').addEventListener('click',e=>{ if(e.target.id==='pl-overlay') closePipeline(); });
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      closePipeline();
+      closeIgSettings(); closeIgPublish(); closeIgSchedule();
+    }
+  });
+  // Carregar calendário na inicialização
+  setTimeout(loadCalendarJobs, 500);
+});
+
+/* ══════════════════════════════════════════
+   INSTAGRAM — SETTINGS
+══════════════════════════════════════════ */
+function openIgSettings(){
+  fetch(`${API}/api/instagram/config`)
+    .then(r=>r.json())
+    .then(cfg=>{
+      document.getElementById('ig-user-id').value  = cfg.igUserId  || '';
+      document.getElementById('ig-app-id').value   = cfg.appId     || '';
+      document.getElementById('ig-imgbb-key').value= cfg.imgbbApiKey||'';
+      if(cfg.hasToken)   document.getElementById('ig-token').placeholder     = '●●●●●● (configurado — deixe vazio para manter)';
+      if(cfg.hasSecret)  document.getElementById('ig-app-secret').placeholder = '●●●●●● (configurado — deixe vazio para manter)';
+      document.getElementById('ig-settings-status').innerHTML='';
+    }).catch(()=>{});
+  document.getElementById('ig-settings-overlay').classList.add('open');
+}
+function closeIgSettings(){ document.getElementById('ig-settings-overlay').classList.remove('open'); }
+
+async function diagnosticarInstagram(){
+  const el = document.getElementById('ig-diag-result');
+  el.innerHTML = '<span style="color:var(--text-muted);font-size:12px">🔄 Verificando token e buscando contas...</span>';
+
+  try {
+    const r = await fetch(`${API}/api/instagram/diagnose`);
+    const d = await r.json();
+
+    if (!r.ok) {
+      el.innerHTML = `<div style="color:#f87171;font-size:12px;background:#1a0a0a;border-radius:8px;padding:10px">⚠️ ${esc(d.error)}</div>`;
+      return;
+    }
+
+    let html = `<div style="background:#0d1e0d;border:1px solid #1e3d1e;border-radius:10px;padding:14px;font-size:12.5px">`;
+
+    // Token info
+    html += `<div style="color:#4ade80;font-weight:700;margin-bottom:8px">✅ Token válido</div>`;
+    if (d.token_info?.name) {
+      html += `<div style="color:var(--text-muted);margin-bottom:10px">Usuário: <strong style="color:var(--text)">${esc(d.token_info.name)}</strong> (ID: ${esc(d.token_info.id)})</div>`;
+    }
+
+    // Contas Instagram encontradas
+    if (d.instagram_accounts?.length > 0) {
+      html += `<div style="color:#4ade80;font-weight:700;margin-bottom:6px">📸 Contas Instagram encontradas:</div>`;
+      d.instagram_accounts.forEach(acc => {
+        const igId = acc.id;
+        html += `
+          <div style="background:#0a1a0a;border:1px solid #2a4a2a;border-radius:8px;padding:10px;margin-bottom:8px">
+            <div style="color:#e8edf8;font-weight:600">@${esc(acc.username || acc.name || '—')}</div>
+            <div style="color:var(--text-muted);font-size:11px;margin:2px 0">ID: <code style="color:#4ade80;background:#1a2a1a;padding:1px 6px;border-radius:4px">${esc(igId)}</code></div>
+            <button onclick="usarIgId('${esc(igId)}')"
+              style="margin-top:8px;background:#4ade8020;border:1px solid #4ade8060;color:#4ade80;padding:5px 12px;border-radius:6px;font-size:11.5px;cursor:pointer;font-weight:600">
+              ✅ Usar este ID
+            </button>
+          </div>`;
+      });
+    } else {
+      html += `<div style="color:#f87171;font-size:12px">⚠️ Nenhuma conta Instagram Business encontrada.<br>
+        Certifique-se que sua <strong>Página do Facebook</strong> está vinculada a uma <strong>conta Instagram Business ou Creator</strong>.</div>`;
+    }
+
+    // Páginas
+    if (d.pages?.length > 0 && d.instagram_accounts?.length === 0) {
+      html += `<div style="color:var(--text-muted);margin-top:8px;font-size:11.5px">Páginas FB encontradas: ${d.pages.map(p=>esc(p.page_name)).join(', ')} — mas sem Instagram vinculado.</div>`;
+    }
+
+    html += '</div>';
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div style="color:#f87171;font-size:12px">⚠️ ${esc(e.message)}</div>`;
+  }
+}
+
+function usarIgId(id){
+  document.getElementById('ig-user-id').value = id;
+  document.getElementById('ig-diag-result').insertAdjacentHTML('beforeend',
+    `<div style="color:#4ade80;font-size:12px;margin-top:6px">✅ ID preenchido no campo acima. Clique em <strong>Salvar</strong>.</div>`);
+}
+
+async function saveIgSettings(){
+  const payload = {
+    accessToken : document.getElementById('ig-token').value.trim(),
+    igUserId    : document.getElementById('ig-user-id').value.trim(),
+    appId       : document.getElementById('ig-app-id').value.trim(),
+    appSecret   : document.getElementById('ig-app-secret').value.trim(),
+    imgbbApiKey : document.getElementById('ig-imgbb-key').value.trim()
+  };
+  const status = document.getElementById('ig-settings-status');
+  try {
+    const res  = await fetch(`${API}/api/instagram/config`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error);
+    status.innerHTML=`<span class="kb-status ok">✅ Configurações salvas!</span>`;
+    setTimeout(closeIgSettings, 1500);
+  } catch(e){
+    status.innerHTML=`<span class="kb-status err">⚠️ ${esc(e.message)}</span>`;
+  }
+}
+
+/* ══════════════════════════════════════════
+   INSTAGRAM — CAPTURA DE SLIDES
+══════════════════════════════════════════ */
+function captureSlides(){
+  return new Promise((resolve,reject)=>{
+    if(!pl.slidesHtml) return reject(new Error('Nenhum slide disponível.'));
+
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText='position:fixed;left:-9999px;top:0;width:600px;height:5000px;border:none;visibility:hidden;z-index:-1';
+    document.body.appendChild(iframe);
+
+    iframe.onload = async()=>{
+      try{
+        const doc    = iframe.contentDocument || iframe.contentWindow.document;
+        let slides   = Array.from(doc.querySelectorAll('.slide'));
+        if(!slides.length){
+          // fallback: tenta capturar o body inteiro como 1 slide
+          slides = [doc.body];
+        }
+        if(slides.length>10) slides = slides.slice(0,10);
+
+        const captured=[];
+        for(let i=0;i<slides.length;i++){
+          // Atualiza progress no modal de publicação
+          const pct=Math.round(((i)/slides.length)*100);
+          const bar=document.getElementById('ig-cap-bar');
+          const lbl=document.getElementById('ig-cap-label');
+          if(bar) bar.style.width=pct+'%';
+          if(lbl) lbl.textContent=`Capturando slide ${i+1} de ${slides.length}...`;
+
+          const canvas = await html2canvas(slides[i],{
+            width:540, height:540, scale:1,
+            backgroundColor:'#080c14',
+            logging:false, useCORS:true, allowTaint:true
+          });
+          captured.push(canvas.toDataURL('image/jpeg',0.92).split(',')[1]);
+        }
+
+        const bar=document.getElementById('ig-cap-bar');
+        if(bar) bar.style.width='100%';
+        document.body.removeChild(iframe);
+        resolve(captured);
+      }catch(err){
+        document.body.removeChild(iframe);
+        reject(err);
+      }
+    };
+    iframe.onerror=()=>{
+      document.body.removeChild(iframe);
+      reject(new Error('Falha ao carregar slides no iframe.'));
+    };
+    const blob=new Blob([pl.slidesHtml],{type:'text/html'});
+    iframe.src=URL.createObjectURL(blob);
+  });
+}
+
+/* ══════════════════════════════════════════
+   INSTAGRAM — MODAL DE PUBLICAÇÃO
+══════════════════════════════════════════ */
+async function openIgPublish(isSchedule){
+  // Se não há slides gerados, avisar mas deixar configurar
+  if(!pl.slidesHtml){
+    document.getElementById('ig-pub-subtitle').textContent='Slides não gerados';
+    document.getElementById('ig-pub-body').innerHTML=`
+      <div style="padding:1.5rem;text-align:center">
+        <div style="font-size:2rem;margin-bottom:12px">⚠️</div>
+        <p style="font-size:14px;color:var(--text-sub);margin-bottom:16px">
+          Os slides ainda não foram gerados. Complete o <strong>Passo 6 (Davi)</strong> do pipeline para habilitar a publicação visual no Instagram.
+        </p>
+        <p style="font-size:12px;color:var(--text-muted)">
+          Alternativamente, você pode configurar sua conta Instagram em <strong>⚙️ Configurar</strong>.
+        </p>
+      </div>`;
+    document.getElementById('ig-pub-footer').innerHTML=`
+      <button class="pl-btn pl-btn-secondary" onclick="closeIgPublish()">Fechar</button>
+      <button class="pl-btn pl-btn-secondary" onclick="closeIgPublish();openIgSettings()">⚙️ Configurar Instagram</button>`;
+    document.getElementById('ig-publish-overlay').classList.add('open');
+    return;
+  }
+  igCapturedImages=[];
+  document.getElementById('ig-pub-subtitle').textContent='Capturando slides...';
+  document.getElementById('ig-pub-body').innerHTML=`
+    <div class="ig-progress-wrap">
+      <p style="font-size:13px;color:var(--text-sub);margin-bottom:8px">
+        Convertendo cada slide em imagem JPEG (540×540)...
+      </p>
+      <div class="ig-progress-track"><div class="ig-progress-bar" id="ig-cap-bar"></div></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:6px" id="ig-cap-label">Iniciando...</p>
+    </div>`;
+  document.getElementById('ig-pub-footer').innerHTML='';
+  document.getElementById('ig-publish-overlay').classList.add('open');
+
+  try{
+    igCapturedImages = await captureSlides();
+  }catch(e){
+    document.getElementById('ig-pub-body').innerHTML=
+      `<p style="color:#e74c3c;padding:1rem">⚠️ Erro ao capturar slides: ${esc(e.message)}</p>`;
+    document.getElementById('ig-pub-footer').innerHTML=
+      `<button class="pl-btn pl-btn-secondary" onclick="closeIgPublish()">Fechar</button>`;
+    return;
+  }
+
+  if(igCapturedImages.length < 2){
+    document.getElementById('ig-pub-body').innerHTML=
+      `<p style="color:#e74c3c;padding:1rem">⚠️ Mínimo 2 slides para publicar no carrossel. Apenas ${igCapturedImages.length} slide(s) encontrado(s).</p>`;
+    document.getElementById('ig-pub-footer').innerHTML=
+      `<button class="pl-btn pl-btn-secondary" onclick="closeIgPublish()">Fechar</button>`;
+    return;
+  }
+
+  if(isSchedule){
+    closeIgPublish();
+    openIgSchedule();
+  } else {
+    renderPublishPreview();
+  }
+}
+
+function closeIgPublish(){ document.getElementById('ig-publish-overlay').classList.remove('open'); }
+
+function buildCaption(){
+  const raw = pl.copy || '';
+
+  let body = '';
+  let hashtags = '';
+
+  // ── FORMATO NOVO: ---COPY--- / ---HASHTAGS--- / ---FIM--- ──
+  const newFmt = raw.match(/---COPY---\s*([\s\S]*?)---HASHTAGS---\s*([\s\S]*?)---FIM---/i);
+  if(newFmt){
+    body     = newFmt[1].trim();
+    hashtags = newFmt[2].trim();
+  }
+  // ── FORMATO ANTIGO: blocos com COPY COMPLETO / HASHTAGS ──
+  else {
+    const copyMatch = raw.match(/COPY COMPLETO[:\s]*\n([\s\S]*?)(?:---|HASHTAGS)/i);
+    if(copyMatch) body = copyMatch[1];
+    else body = raw;
+
+    // Hashtags: pegar só linhas que começam com # ou contêm #palavras
+    const tagBlock = raw.match(/HASHTAGS[:\s]*\n([\s\S]*?)(?:---|⏰|💡|$)/i);
+    if(tagBlock){
+      hashtags = tagBlock[1].split('\n')
+        .filter(l => l.trim().startsWith('#') || /\s#\w/.test(l))
+        .join(' ').trim();
+    }
+  }
+
+  // Limpar body: remover markdown, labels de metadados e separadores
+  body = body
+    .replace(/\*\*/g, '')
+    .replace(/`{1,3}/g, '')
+    .replace(/^#{1,6}\s.*$/gm, '')
+    // linhas de metadados: emoji(s) + LABEL EM CAPS + dois pontos
+    .replace(/^[^\w\s]*\s*[A-ZÁÉÍÓÚÃÕÊÇ\s]{3,}:\s*.{0,80}$/gm, '')
+    // linhas só com separadores
+    .replace(/^[-─━=]{2,}$/gm, '')
+    // hashtags soltas no meio do copy (serão adicionadas depois no bloco)
+    .trim();
+
+  // Limpar hashtags: só tokens #palavra, sem lixo
+  if(hashtags){
+    hashtags = hashtags
+      .replace(/\*\*/g,'')
+      .split(/[\s,]+/)
+      .filter(t => t.startsWith('#') && t.length > 1)
+      .join(' ');
+  }
+
+  const final = hashtags
+    ? body.trimEnd() + '\n\n' + hashtags
+    : body;
+
+  return final.trim().slice(0, 2200);
+}
+
+function renderPublishPreview(){
+  const caption=buildCaption();
+  document.getElementById('ig-pub-subtitle').textContent=
+    `${igCapturedImages.length} slides capturados`;
+  document.getElementById('ig-pub-body').innerHTML=`
+    <div class="ig-thumb-strip">
+      ${igCapturedImages.map((img,i)=>
+        `<img class="ig-thumb" src="data:image/jpeg;base64,${img}" alt="Slide ${i+1}">`
+      ).join('')}
+    </div>
+    <label class="ig-label">Caption do Instagram</label>
+    <textarea class="ig-input" id="ig-caption-input" rows="6"
+              style="min-height:110px;resize:vertical">${esc(caption)}</textarea>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:5px">${caption.length}/2200 caracteres</p>
+    <div id="ig-publish-status" style="margin-top:1rem"></div>`;
+  document.getElementById('ig-pub-footer').innerHTML=`
+    <button class="pl-btn pl-btn-secondary" onclick="closeIgPublish()">Cancelar</button>
+    <button class="pl-btn pl-btn-primary" id="ig-pub-btn" onclick="executePublish()"
+            style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);border-color:transparent;color:#fff">
+      📤 Publicar no Instagram
+    </button>`;
+}
+
+async function executePublish(){
+  if(igPublishing) return;
+  igPublishing=true;
+  const caption  = document.getElementById('ig-caption-input').value;
+  const status   = document.getElementById('ig-publish-status');
+  const btn      = document.getElementById('ig-pub-btn');
+  btn.disabled=true;
+  btn.textContent='⏳ Publicando...';
+  status.innerHTML=`<span class="kb-status ok">Enviando imagens para imgbb...</span>`;
+  try{
+    const res  = await fetch(`${API}/api/instagram/publish`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ images: igCapturedImages, caption })
+    });
+    const data = await res.json();
+    if(res.status===401) throw new Error('Token expirado. Atualize em ⚙️ Configurar.');
+    if(res.status===429) throw new Error('Limite diário atingido. Tente amanhã.');
+    if(data.error) throw new Error(data.error);
+    status.innerHTML=`<span class="kb-status ok">✅ Publicado com sucesso! Post ID: ${data.postId}</span>`;
+    btn.textContent='✅ Publicado!';
+  }catch(e){
+    status.innerHTML=`<span class="kb-status err">⚠️ ${esc(e.message)}</span>
+      <br><button class="pl-btn pl-btn-secondary" style="margin-top:8px" onclick="openIgSettings()">⚙️ Abrir configurações</button>`;
+    btn.disabled=false;
+    btn.textContent='🔄 Tentar novamente';
+  }finally{
+    igPublishing=false;
+  }
+}
+
+/* ══════════════════════════════════════════
+   INSTAGRAM — AGENDAMENTO
+══════════════════════════════════════════ */
+function openIgSchedule(){
+  const min=new Date(Date.now()+5*60000);
+  const pad=n=>String(n).padStart(2,'0');
+  const iso=`${min.getFullYear()}-${pad(min.getMonth()+1)}-${pad(min.getDate())}T${pad(min.getHours())}:${pad(min.getMinutes())}`;
+  const inp=document.getElementById('ig-schedule-datetime');
+  inp.min=iso; inp.value=iso;
+  document.getElementById('ig-schedule-status').innerHTML='';
+  document.getElementById('ig-schedule-overlay').classList.add('open');
+}
+function closeIgSchedule(){ document.getElementById('ig-schedule-overlay').classList.remove('open'); }
+
+async function confirmSchedule(){
+  const dt     = document.getElementById('ig-schedule-datetime').value;
+  const status = document.getElementById('ig-schedule-status');
+  if(!dt){ status.innerHTML=`<span class="kb-status err">⚠️ Selecione uma data/hora.</span>`; return; }
+  const scheduled=new Date(dt);
+  if(scheduled<=new Date(Date.now()+4*60000)){
+    status.innerHTML=`<span class="kb-status err">⚠️ Mínimo 5 minutos no futuro.</span>`; return;
+  }
+  const caption=buildCaption();
+  try{
+    const res=await fetch(`${API}/api/instagram/schedule`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ images:igCapturedImages, caption, scheduledTime:scheduled.toISOString() })
+    });
+    const data=await res.json();
+    if(data.error) throw new Error(data.error);
+    status.innerHTML=`<span class="kb-status ok">✅ Agendado para ${scheduled.toLocaleString('pt-BR')}!</span>`;
+    setTimeout(()=>{ closeIgSchedule(); loadScheduledJobs(); }, 2000);
+  }catch(e){
+    status.innerHTML=`<span class="kb-status err">⚠️ ${esc(e.message)}</span>`;
+  }
+}
+
+
+/* ─── Renderer markdown linha a linha (robusto) ─── */
+function mdToHtml(rawText, cor) {
+  const lines = rawText.split('\n');
+  let out = '';
+  let listItems = [];
+  let tableRows = [];
+  let inTable = false;
+
+  function flushList() {
+    if (!listItems.length) return;
+    out += `<ul style="padding-left:20px;margin:6px 0 10px;line-height:1.7">${listItems.join('')}</ul>`;
+    listItems = [];
+  }
+  function flushTable() {
+    if (!tableRows.length) return;
+    out += `<div style="overflow-x:auto;margin:10px 0"><table style="border-collapse:collapse;width:100%;font-size:12.5px">${tableRows.join('')}</table></div>`;
+    tableRows = [];
+    inTable = false;
+  }
+
+  function inlineStyles(s) {
+    return s
+      .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#e8edf8">$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em style="color:#aab4c8">$1</em>')
+      .replace(/`(.+?)`/g, '<code style="background:#1a2235;padding:2px 6px;border-radius:4px;font-size:11.5px;font-family:monospace">$1</code>');
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Linha de tabela
+    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+      flushList();
+      // Pula linha separadora |---|---|
+      if (/^\|[\s\-:|]+\|$/.test(line.trim())) { inTable = true; continue; }
+      const cells = line.split('|').slice(1, -1).map(c => c.trim());
+      const isHeader = !inTable;
+      const tag = isHeader ? 'th' : 'td';
+      const rowStyle = isHeader
+        ? `background:${cor}22;font-weight:700;color:${cor};font-size:12px`
+        : 'color:#c9d1d9;font-size:12px';
+      tableRows.push('<tr>' + cells.map(c =>
+        `<${tag} style="padding:8px 12px;border:1px solid ${cor}25;${rowStyle}">${inlineStyles(c)}</${tag}>`
+      ).join('') + '</tr>');
+      inTable = true;
+      continue;
+    } else if (inTable) {
+      flushTable();
+    }
+
+    // Títulos
+    if (/^#{1} (.+)/.test(line)) {
+      flushList();
+      out += `<div style="color:${cor};font-size:15px;font-weight:700;border-bottom:1px solid ${cor}35;padding-bottom:8px;margin:20px 0 10px">${inlineStyles(line.replace(/^# /, ''))}</div>`;
+      continue;
+    }
+    if (/^#{2} (.+)/.test(line)) {
+      flushList();
+      out += `<div style="color:${cor};font-size:13.5px;font-weight:700;margin:16px 0 6px;display:flex;align-items:center;gap:8px"><span style="width:3px;height:14px;background:${cor};border-radius:2px;display:inline-block;flex-shrink:0"></span>${inlineStyles(line.replace(/^## /, ''))}</div>`;
+      continue;
+    }
+    if (/^#{3,6} (.+)/.test(line)) {
+      flushList();
+      out += `<div style="color:#c9d1d9;font-size:12.5px;font-weight:700;margin:10px 0 4px">${inlineStyles(line.replace(/^#{3,6} /, ''))}</div>`;
+      continue;
+    }
+
+    // Separador
+    if (/^---+$/.test(line.trim())) {
+      flushList();
+      out += `<hr style="border:none;border-top:1px solid ${cor}25;margin:14px 0">`;
+      continue;
+    }
+
+    // Lista
+    if (/^[-•*] (.+)/.test(line)) {
+      tableRows.length && flushTable();
+      listItems.push(`<li style="margin-bottom:4px">${inlineStyles(line.replace(/^[-•*] /, ''))}</li>`);
+      continue;
+    }
+    if (/^\d+\. (.+)/.test(line)) {
+      tableRows.length && flushTable();
+      listItems.push(`<li style="margin-bottom:4px">${inlineStyles(line.replace(/^\d+\. /, ''))}</li>`);
+      continue;
+    }
+
+    // Linha vazia — fecha lista/parágrafo
+    if (!line.trim()) {
+      flushList();
+      tableRows.length && flushTable();
+      out += '<div style="height:8px"></div>';
+      continue;
+    }
+
+    // Parágrafo normal
+    flushList();
+    tableRows.length && flushTable();
+    out += `<p style="margin:0 0 6px;line-height:1.75;color:#c9d1d9;font-size:13px">${inlineStyles(line)}</p>`;
+  }
+
+  flushList();
+  flushTable();
+  return out;
+}
+
+async function loadScheduledJobs(){
+  const el=document.getElementById('ig-scheduled-list');
+  if(!el) return;
+  try{
+    const res  = await fetch(`${API}/api/instagram/scheduled`);
+    const data = await res.json();
+    const jobs = (data.jobs||[]);
+    const visible = jobs.filter(j=>j.status==='pending'||j.status==='missed'||j.status==='failed');
+    if(!visible.length){ el.innerHTML=''; return; }
+    el.innerHTML=`
+      <div class="pl-final-card-title" style="margin-bottom:8px;margin-top:4px">🗓️ POSTS AGENDADOS</div>
+      ${visible.map(j=>`
+        <div class="ig-job-item">
+          <div class="ig-job-time">${new Date(j.scheduledTime).toLocaleString('pt-BR')}</div>
+          <div style="flex:1;color:var(--text-muted)">${j.slideCount} slides</div>
+          <span class="ig-job-badge ${j.status!=='pending'?j.status:''}">${j.status}</span>
+          ${j.status==='pending'?`<button class="doc-del" onclick="cancelScheduledJob('${j.id}')" title="Cancelar">🗑</button>`:''}
+        </div>`).join('')}`;
+  }catch(e){ /* silently fail */ }
+}
+
+async function cancelScheduledJob(id){
+  if(!confirm('Cancelar este post agendado?')) return;
+  try{
+    await fetch(`${API}/api/instagram/scheduled/${id}`,{method:'DELETE'});
+    await loadScheduledJobs();
+  }catch(e){ alert('Erro ao cancelar: '+e.message); }
+}
+
+async function loadCalendarJobs(){
+  const el = document.getElementById('ig-calendar-list');
+  if(!el) return;
+  try {
+    const resp = await fetch(`${API}/api/instagram/scheduled`);
+    const { jobs } = await resp.json();
+    if(!jobs || jobs.length === 0){
+      el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:1rem 0">Nenhum post agendado. Use o botão 🗓️ Agendar no pipeline.</p>';
+      return;
+    }
+    const byStatus = { pending: [], published: [], failed: [], missed: [] };
+    jobs.forEach(j => (byStatus[j.status]||byStatus.failed).push(j));
+
+    const statusLabel = { pending:'⏳ Aguardando', published:'✅ Publicado', failed:'❌ Falhou', missed:'⚠️ Perdido' };
+    const statusColor = { pending:'#00C896', published:'#4ade80', failed:'#ef4444', missed:'#f59e0b' };
+
+    el.innerHTML = jobs.sort((a,b)=>new Date(b.scheduledTime)-new Date(a.scheduledTime)).map(j => {
+      const dt = new Date(j.scheduledTime);
+      const dtStr = dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}) + ' às ' + dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      const col = statusColor[j.status]||'#888';
+      const lbl = statusLabel[j.status]||j.status;
+      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #1e2840">
+        <div style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:#fff;font-weight:600">${dtStr}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${lbl} ${j.status==='pending'?`<button onclick="cancelCalendarJob('${j.id}')" style="margin-left:8px;background:none;border:1px solid #ef444460;color:#ef4444;border-radius:4px;padding:1px 6px;font-size:10px;cursor:pointer">Cancelar</button>`:''}</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted)">ID: ${j.id.slice(0,8)}...</div>
+      </div>`;
+    }).join('');
+
+    const pending = byStatus.pending.length;
+    if(pending > 0) el.insertAdjacentHTML('afterbegin', `<div style="font-size:12px;color:#00C896;margin-bottom:12px;font-weight:600">📅 ${pending} post(s) agendado(s) para publicação automática</div>`);
+  } catch(e) {
+    el.innerHTML = `<p style="color:#ef4444;font-size:13px">Erro ao carregar: ${e.message}</p>`;
+  }
+}
+
+async function cancelCalendarJob(id){
+  if(!confirm('Cancelar este agendamento?')) return;
+  await fetch(`${API}/api/instagram/scheduled/`+id, {method:'DELETE'});
+  loadCalendarJobs();
+}
+
+/* ════════════════════════════════════════════
+   BIA — AUTO-RESPONDER
+════════════════════════════════════════════ */
+let biaConfig = { enabled: false, profile: 'franklim', intervalMinutes: 5, customInstructions: '', igUsername: '' };
+
+async function loadBiaStatus(){
+  try {
+    const res = await fetch(`${API}/api/instagram/autoresponder`);
+    biaConfig = await res.json();
+  } catch(e){ biaConfig = { enabled: false }; }
+  renderBiaStatus();
+}
+
+function renderBiaStatus(){
+  const enabled = biaConfig.enabled;
+  const badge   = document.getElementById('bia-status-badge');
+  const toggleMain = document.getElementById('bia-toggle-btn');
+  const toggleModal = document.getElementById('bia-modal-toggle-btn');
+  const statusModal = document.getElementById('bia-modal-status');
+
+  if(badge){
+    badge.textContent = enabled
+      ? '◉ BIA · AUTO-RESPONDER · ATIVO'
+      : '◎ BIA · AUTO-RESPONDER · DESATIVADO';
+    badge.style.color = enabled ? '#00C896' : '';
+  }
+  if(toggleMain){
+    toggleMain.textContent = enabled ? '🟢 Desativar' : '🔴 Ativar';
+    toggleMain.style.background = enabled ? '#ef444420' : '';
+    toggleMain.style.borderColor = enabled ? '#ef444460' : '';
+    toggleMain.style.color = enabled ? '#ef4444' : '';
+  }
+  if(toggleModal){
+    toggleModal.textContent = enabled ? '🟢 Desativar Bia' : '🔴 Ativar Bia';
+    toggleModal.style.background = enabled ? '#ef444420' : '';
+    toggleModal.style.borderColor = enabled ? '#ef444460' : '';
+    toggleModal.style.color = enabled ? '#ef4444' : '';
+  }
+  if(statusModal){
+    statusModal.innerHTML = enabled
+      ? `<span style="color:#00C896">● Bia está ativa</span> — varrendo a cada ${biaConfig.intervalMinutes||5} min`
+      : `<span style="color:#ef4444">● Bia está desativada</span>`;
+  }
+}
+
+async function toggleBia(){
+  try {
+    const res = await fetch(`${API}/api/instagram/autoresponder/toggle`, { method:'POST' });
+    const data = await res.json();
+    biaConfig.enabled = data.enabled;
+    renderBiaStatus();
+  } catch(e){ alert('Erro ao alternar Bia: '+e.message); }
+}
+
+async function saveBiaConfig(){
+  const profile      = document.getElementById('bia-profile-select')?.value || 'franklim';
+  const igUsername   = document.getElementById('bia-username')?.value.trim().replace('@','') || '';
+  const intervalMin  = parseInt(document.getElementById('bia-interval')?.value) || 5;
+  const instructions = document.getElementById('bia-instructions')?.value.trim() || '';
+  const respondToAll = document.getElementById('bia-respond-all')?.checked ?? true;
+
+  try {
+    await fetch(`${API}/api/instagram/autoresponder`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ profile, igUsername, intervalMinutes: intervalMin, customInstructions: instructions, respondToAll })
+    });
+    biaConfig = { ...biaConfig, profile, igUsername, intervalMinutes: intervalMin, customInstructions: instructions, respondToAll };
+    const ok = document.getElementById('bia-save-ok');
+    if(ok){ ok.style.display='block'; setTimeout(()=>{ ok.style.display='none'; }, 2500); }
+    renderBiaStatus();
+  } catch(e){ alert('Erro ao salvar: '+e.message); }
+}
+
+async function loadBiaLog(){
+  const el = document.getElementById('bia-log-list');
+  if(!el) return;
+  try {
+    const res  = await fetch(`${API}/api/instagram/autoresponder/log`);
+    const data = await res.json();
+    const log  = data.log || [];
+
+    const countEl = document.getElementById('bia-modal-log-count');
+    if(countEl) countEl.textContent = `${log.length} resposta(s) no histórico`;
+
+    if(!log.length){
+      el.innerHTML = `<p style="font-size:12px;color:var(--text-muted)">Nenhuma resposta ainda.</p>`;
+      return;
+    }
+    el.innerHTML = log.map(entry => {
+      const dt = new Date(entry.at);
+      const when = dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) + ' ' +
+                   dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      return `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:11px;font-weight:700;color:var(--green)">@${entry.username}</span>
+          <span style="font-size:10px;color:var(--text-muted)">${when}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-sub);margin-bottom:4px">💬 "${entry.comment}"</div>
+        <div style="font-size:12px;color:var(--text)">↳ "${entry.reply}"</div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    el.innerHTML = `<p style="font-size:12px;color:var(--red)">Erro ao carregar log.</p>`;
+  }
+}
+
+function openBia(){
+  document.getElementById('bia-overlay').classList.add('open');
+  // Preenche campos com config atual
+  const sel = document.getElementById('bia-profile-select');
+  if(sel && biaConfig.profile) sel.value = biaConfig.profile;
+  const uInput = document.getElementById('bia-username');
+  if(uInput) uInput.value = biaConfig.igUsername || '';
+  const iInput = document.getElementById('bia-interval');
+  if(iInput) iInput.value = biaConfig.intervalMinutes || 5;
+  const instrInput = document.getElementById('bia-instructions');
+  if(instrInput) instrInput.value = biaConfig.customInstructions || '';
+  const chkAll = document.getElementById('bia-respond-all');
+  if(chkAll) chkAll.checked = biaConfig.respondToAll !== false;
+  biaTab('config'); // inicia na aba config
+  renderBiaStatus();
+}
+
+function closeBia(){
+  document.getElementById('bia-overlay').classList.remove('open');
+}
+
+// Carrega status ao abrir a página
+loadBiaStatus();
+
+/* ═══════════════════════════════════════════
+   ANA — CRIADORA DE VÍDEOS
+═══════════════════════════════════════════ */
+let anaProfile = 'franklim';
+
+function openAna(){
+  document.getElementById('ana-overlay').classList.add('open');
+  anaSelectProfile(anaProfile);
+  document.getElementById('ana-result').style.display = 'none';
+  document.getElementById('ana-form').style.display = 'block';
+}
+function closeAna(){
+  document.getElementById('ana-overlay').classList.remove('open');
+}
+
+function anaSelectProfile(profile){
+  anaProfile = profile;
+  const opts = { franklim: { cor:'var(--green)', bg:'#00C89615', textCor:'var(--green)' }, pac: { cor:'#F97316', bg:'#F9731615', textCor:'#F97316' } };
+  ['franklim','pac'].forEach(p => {
+    const el    = document.getElementById(`ana-opt-${p}`);
+    const title = el?.querySelector('div > div:first-child');
+    const opt   = opts[p];
+    const sel   = p === profile;
+    if(el){
+      el.style.borderColor = sel ? opt.cor : 'var(--border)';
+      el.style.background  = sel ? opt.bg  : 'transparent';
+    }
+    if(title) title.style.color = sel ? opt.textCor : 'var(--text-sub)';
+  });
+}
+
+async function gerarAna(){
+  const tema   = document.getElementById('ana-tema')?.value.trim();
+  const extras = document.getElementById('ana-extras')?.value.trim();
+  if(!tema){ document.getElementById('ana-tema').focus(); return; }
+
+  // Mostra loading
+  const btn = document.getElementById('ana-gerar-btn');
+  btn.disabled = true;
+  btn.textContent = '✨ Gerando...';
+  document.getElementById('ana-result').style.display   = 'block';
+  document.getElementById('ana-loading').style.display  = 'flex';
+  document.getElementById('ana-loading').style.flexDirection = 'column';
+  document.getElementById('ana-loading').style.alignItems = 'center';
+  ['ana-gancho-block','ana-roteiro-block','ana-legenda-block'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+
+  try {
+    const res  = await fetch(`${API}/api/ana/gerar`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ tema, extras, profile: anaProfile })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Erro ao gerar');
+
+    document.getElementById('ana-loading').style.display = 'none';
+
+    // Gancho
+    if(data.gancho){
+      document.getElementById('ana-gancho-text').textContent = data.gancho;
+      document.getElementById('ana-gancho-block').style.display = 'block';
+    }
+    // Roteiro
+    if(data.roteiro){
+      document.getElementById('ana-roteiro-text').textContent = data.roteiro;
+      document.getElementById('ana-roteiro-block').style.display = 'block';
+    }
+    // Legenda
+    if(data.legenda){
+      document.getElementById('ana-legenda-text').textContent = data.legenda;
+      document.getElementById('ana-legenda-block').style.display = 'block';
+    }
+
+    // Esconde form, mostra resultado
+    document.getElementById('ana-form').style.display = 'none';
+
+  } catch(e){
+    document.getElementById('ana-loading').innerHTML =
+      `<div style="color:var(--red);font-size:13px">❌ ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🎬 Criar conteúdo com Ana';
+  }
+}
+
+function anaNovoTema(){
+  document.getElementById('ana-result').style.display = 'none';
+  document.getElementById('ana-form').style.display   = 'block';
+  document.getElementById('ana-tema').value   = '';
+  document.getElementById('ana-extras').value = '';
+  document.getElementById('ana-tema').focus();
+}
+
+function anaCopy(sourceId, feedbackId){
+  const text = document.getElementById(sourceId)?.textContent || '';
+  navigator.clipboard.writeText(text).then(()=>{
+    const el = document.getElementById(feedbackId);
+    if(el){ el.style.display='inline'; setTimeout(()=>el.style.display='none', 2000); }
+  });
+}
+
+/* ═══════════════════════════════════════════
+   BIA — ABAS
+═══════════════════════════════════════════ */
+function biaTab(name){
+  ['config','triggers','log'].forEach(t=>{
+    const btn  = document.getElementById(`bia-tab-${t}`);
+    const pane = document.getElementById(`bia-pane-${t}`);
+    if(btn)  btn.classList.toggle('bia-tab-active', t===name);
+    if(pane) pane.style.display = t===name ? 'block' : 'none';
+  });
+  if(name==='triggers') loadBiaTriggers();
+  if(name==='log')      loadBiaLog();
+}
+
+/* ═══════════════════════════════════════════
+   BIA — GATILHOS
+═══════════════════════════════════════════ */
+let biaTriggers = [];
+
+let currentTrigType = 'fixed';
+
+function selectTrigType(type){
+  currentTrigType = type;
+  const fixedOpt = document.getElementById('trig-opt-fixed');
+  const aiOpt    = document.getElementById('trig-opt-ai');
+  const fixedBox = document.getElementById('trig-compose-fixed');
+  const aiBox    = document.getElementById('trig-compose-ai');
+
+  if(type === 'fixed'){
+    fixedOpt.style.borderColor = 'var(--green)';
+    fixedOpt.style.background  = '#00C89615';
+    fixedOpt.querySelector('div:nth-child(2)').style.color = 'var(--green)';
+    aiOpt.style.borderColor    = 'var(--border)';
+    aiOpt.style.background     = 'transparent';
+    aiOpt.querySelector('div:nth-child(2)').style.color = 'var(--text-sub)';
+    fixedBox.style.display = 'block';
+    aiBox.style.display    = 'none';
+  } else {
+    aiOpt.style.borderColor    = 'var(--blue)';
+    aiOpt.style.background     = '#4f9eff15';
+    aiOpt.querySelector('div:nth-child(2)').style.color = 'var(--blue)';
+    fixedOpt.style.borderColor = 'var(--border)';
+    fixedOpt.style.background  = 'transparent';
+    fixedOpt.querySelector('div:nth-child(2)').style.color = 'var(--text-sub)';
+    aiBox.style.display    = 'block';
+    fixedBox.style.display = 'none';
+  }
+}
+
+function trigStep1Change(){
+  const val   = document.getElementById('trig-keywords')?.value.trim() || '';
+  const step2 = document.getElementById('trig-step-2');
+  const step3 = document.getElementById('trig-step-3');
+  const tags  = document.getElementById('trig-kw-tags');
+
+  // Renderiza tags visuais
+  const kws = val.split(',').map(k=>k.trim()).filter(Boolean);
+  if(tags) tags.innerHTML = kws.map(k=>
+    `<span style="background:var(--green-dim);border:1px solid var(--green-border);color:var(--green);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600">${k}</span>`
+  ).join('');
+
+  // Desbloqueia etapas
+  const hasKW = kws.length > 0;
+  if(step2){ step2.style.opacity = hasKW ? '1' : '.35'; step2.style.pointerEvents = hasKW ? 'all' : 'none'; }
+  if(step3){ step3.style.opacity = hasKW ? '1' : '.35'; step3.style.pointerEvents = hasKW ? 'all' : 'none'; }
+}
+
+function trigCharCount(){
+  const inp = document.getElementById('trig-fixed-response');
+  const cnt = document.getElementById('trig-char-count');
+  const prev = document.getElementById('trig-preview-wrap');
+  const prevText = document.getElementById('trig-preview-text');
+  if(!inp || !cnt) return;
+  const len = inp.value.length;
+  cnt.textContent = `${len}/120`;
+  cnt.style.color = len > 110 ? 'var(--yellow)' : len > 0 ? 'var(--green)' : 'var(--text-muted)';
+  // Preview
+  if(prev && prevText){
+    prev.style.display = len > 0 ? 'block' : 'none';
+    prevText.textContent = inp.value;
+  }
+}
+
+async function loadBiaTriggers(){
+  const el = document.getElementById('bia-triggers-list');
+  if(!el) return;
+  try {
+    const res  = await fetch(`${API}/api/instagram/triggers`);
+    const data = await res.json();
+    biaTriggers = data.triggers || [];
+    renderBiaTriggers();
+  } catch(e){
+    el.innerHTML = `<p style="font-size:12px;color:var(--red)">Erro ao carregar.</p>`;
+  }
+}
+
+function renderBiaTriggers(){
+  const el = document.getElementById('bia-triggers-list');
+  if(!el) return;
+  if(!biaTriggers.length){
+    el.innerHTML = `<p style="font-size:12px;color:var(--text-muted)">Nenhum gatilho cadastrado ainda.</p>`;
+    return;
+  }
+  el.innerHTML = biaTriggers.map(t => {
+    const typeLabel = t.responseType==='fixed'
+      ? `<span style="color:var(--blue)">📝 Fixa</span>`
+      : `<span style="color:var(--green)">🤖 IA</span>`;
+    const preview = t.responseType==='fixed'
+      ? `"${(t.fixedResponse||'').slice(0,60)}${t.fixedResponse?.length>60?'…':''}"`
+      : `instrução: ${(t.aiInstruction||'(padrão)').slice(0,50)}`;
+    const hits = t.hitCount || 0;
+    const enabledColor = t.enabled ? 'var(--green)' : 'var(--text-muted)';
+    return `<div style="background:var(--bg-card);border:1px solid ${t.enabled?'var(--border)':'var(--border2)'};border-radius:10px;padding:12px 14px;margin-bottom:8px;opacity:${t.enabled?1:.6}">
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+            <span style="font-size:12px;font-weight:700;color:${enabledColor}">${t.label||t.keywords?.[0]||'—'}</span>
+            ${typeLabel}
+            <span style="font-size:10px;color:var(--text-muted);background:var(--bg-input);border-radius:4px;padding:2px 6px">${hits} disparos</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">
+            Palavras: <span style="color:var(--yellow)">${(t.keywords||[]).join(', ')}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-sub)">${preview}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+          <button onclick="toggleTrigger('${t.id}',${!t.enabled})"
+                  style="font-size:10px;padding:3px 8px;background:none;border:1px solid var(--border);border-radius:5px;color:var(--text-sub);cursor:pointer">
+            ${t.enabled?'Pausar':'Ativar'}
+          </button>
+          <button onclick="deleteTrigger('${t.id}')"
+                  style="font-size:10px;padding:3px 8px;background:none;border:1px solid #ef444440;border-radius:5px;color:#ef4444;cursor:pointer">
+            Excluir
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addTrigger(){
+  const errEl = document.getElementById('trig-add-error');
+  errEl.style.display = 'none';
+
+  const rawKW   = document.getElementById('trig-keywords')?.value.trim();
+  const label   = document.getElementById('trig-label')?.value.trim();
+  const type    = currentTrigType || 'fixed';
+  const fixed   = document.getElementById('trig-fixed-response')?.value.trim();
+  const aiInstr = document.getElementById('trig-ai-instruction')?.value.trim();
+
+  if(!rawKW){ errEl.textContent='Informe ao menos uma palavra-chave.'; errEl.style.display='block'; return; }
+  if(type==='fixed' && !fixed){ errEl.textContent='Escreva a resposta que a Bia vai enviar.'; errEl.style.display='block'; return; }
+  if(type==='ai' && !aiInstr){ errEl.textContent='Escreva a instrução para a IA.'; errEl.style.display='block'; return; }
+
+  const keywords = rawKW.split(',').map(k=>k.trim()).filter(Boolean);
+
+  try {
+    const res  = await fetch(`${API}/api/instagram/triggers`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ keywords, label: label||keywords[0], responseType:type, fixedResponse:fixed||'', aiInstruction:aiInstr||'' })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error||'Erro');
+
+    // Limpa form
+    ['trig-keywords','trig-label','trig-fixed-response','trig-ai-instruction'].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.value='';
+    });
+    const cnt = document.getElementById('trig-char-count');
+    if(cnt) cnt.textContent='0/120';
+    const tags = document.getElementById('trig-kw-tags');
+    if(tags) tags.innerHTML='';
+    const prev = document.getElementById('trig-preview-wrap');
+    if(prev) prev.style.display='none';
+    // Volta etapas para bloqueadas
+    ['trig-step-2','trig-step-3'].forEach(id=>{
+      const s=document.getElementById(id);
+      if(s){ s.style.opacity='.35'; s.style.pointerEvents='none'; }
+    });
+    // Reseta tipo para fixed
+    selectTrigType('fixed');
+    loadBiaTriggers();
+  } catch(e){
+    errEl.textContent = e.message; errEl.style.display='block';
+  }
+}
+
+async function toggleTrigger(id, enabled){
+  await fetch(`${API}/api/instagram/triggers/${id}`,{
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ enabled })
+  });
+  loadBiaTriggers();
+}
+
+async function deleteTrigger(id){
+  if(!confirm('Excluir este gatilho?')) return;
+  await fetch(`${API}/api/instagram/triggers/${id}`, { method:'DELETE' });
+  loadBiaTriggers();
+}
+</script>
+
+<!-- ══ INSTAGRAM SETTINGS OVERLAY ══ -->
+<div class="ig-overlay" id="ig-settings-overlay">
+  <div class="ig-modal" style="max-width:560px">
+    <div class="mhead">
+      <div class="mhead-left">
+        <div class="mavatar" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)">📱</div>
+        <div>
+          <div class="mname">Instagram <span class="accent">Config</span></div>
+          <div class="mrole">Configurações de publicação</div>
+        </div>
+      </div>
+      <div class="mhead-right"><button class="mbtn" onclick="closeIgSettings()">✕</button></div>
+    </div>
+    <div class="ig-section">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:1.2rem;line-height:1.6">
+        Você precisa de: <strong>App ID + Secret</strong> (Meta Developer Dashboard),
+        <strong>Access Token</strong> (long-lived, 60 dias) e
+        <strong>Imgbb API Key</strong> (gratuito em <a href="https://imgbb.com" target="_blank" style="color:var(--green)">api.imgbb.com</a>).
+      </p>
+      <label class="ig-label">Access Token (Long-lived)</label>
+      <input class="ig-input" id="ig-token" type="password" placeholder="EAAxxxxxx...">
+      <label class="ig-label">Instagram User ID (numérico)</label>
+      <input class="ig-input" id="ig-user-id" type="text" placeholder="17841400000000000">
+      <label class="ig-label">App ID</label>
+      <input class="ig-input" id="ig-app-id" type="text" placeholder="1234567890">
+      <label class="ig-label">App Secret</label>
+      <input class="ig-input" id="ig-app-secret" type="password" placeholder="abcdef123456...">
+      <label class="ig-label">Imgbb API Key</label>
+      <input class="ig-input" id="ig-imgbb-key" type="text" placeholder="xxxxxxxxxxxx">
+      <div id="ig-settings-status" style="margin-top:1rem"></div>
+
+      <!-- DIAGNÓSTICO -->
+      <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">🔍 Diagnóstico — descobrir ID correto</div>
+        <button class="pl-btn pl-btn-secondary" style="width:100%;font-size:12px" onclick="diagnosticarInstagram()">🔍 Verificar Token e Descobrir Instagram User ID</button>
+        <div id="ig-diag-result" style="margin-top:10px"></div>
+      </div>
+    </div>
+    <div class="ig-btn-row">
+      <button class="pl-btn pl-btn-secondary" onclick="closeIgSettings()">Cancelar</button>
+      <button class="pl-btn pl-btn-primary" onclick="saveIgSettings()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ INSTAGRAM PUBLISH OVERLAY ══ -->
+<div class="ig-overlay" id="ig-publish-overlay">
+  <div class="ig-modal" style="max-width:600px">
+    <div class="mhead">
+      <div class="mhead-left">
+        <div class="mavatar" style="background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)">📸</div>
+        <div>
+          <div class="mname">Publicar no <span class="accent">Instagram</span></div>
+          <div class="mrole" id="ig-pub-subtitle">Capturando slides...</div>
+        </div>
+      </div>
+      <div class="mhead-right"><button class="mbtn" onclick="closeIgPublish()">✕</button></div>
+    </div>
+    <div class="ig-section" id="ig-pub-body"></div>
+    <div class="ig-btn-row" id="ig-pub-footer"></div>
+  </div>
+</div>
+
+<!-- ══ INSTAGRAM SCHEDULE OVERLAY ══ -->
+<div class="ig-overlay" id="ig-schedule-overlay">
+  <div class="ig-modal" style="max-width:460px">
+    <div class="mhead">
+      <div class="mhead-left">
+        <div class="mavatar">🗓️</div>
+        <div>
+          <div class="mname">Agendar <span class="accent">Post</span></div>
+          <div class="mrole">Escolha data e horário</div>
+        </div>
+      </div>
+      <div class="mhead-right"><button class="mbtn" onclick="closeIgSchedule()">✕</button></div>
+    </div>
+    <div class="ig-section">
+      <label class="ig-label">Data e horário de publicação</label>
+      <input class="ig-input" id="ig-schedule-datetime" type="datetime-local" style="cursor:pointer">
+      <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">
+        ⚠️ O servidor Central IA deve estar rodando no horário agendado para a publicação ocorrer.
+      </p>
+      <div id="ig-schedule-status" style="margin-top:1rem"></div>
+    </div>
+    <div class="ig-btn-row">
+      <button class="pl-btn pl-btn-secondary" onclick="closeIgSchedule()">Cancelar</button>
+      <button class="pl-btn pl-btn-primary" onclick="confirmSchedule()">🗓️ Confirmar agendamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BIA MODAL ══ -->
+<div class="ig-overlay" id="bia-overlay">
+  <div class="ig-modal" style="max-width:600px;max-height:90vh;display:flex;flex-direction:column">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border2);flex-shrink:0">
+      <span style="font-size:22px">💬</span>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:15px;color:#fff">Bia — Auto-Responder</div>
+        <div id="bia-modal-status" style="font-size:11px;color:var(--text-muted);margin-top:1px">Carregando...</div>
+      </div>
+      <button id="bia-modal-toggle-btn" class="pl-btn pl-btn-primary" onclick="toggleBia()" style="min-width:110px;font-size:11px">…</button>
+      <button onclick="closeBia()" style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:4px 8px;line-height:1">✕</button>
+    </div>
+
+    <!-- Abas -->
+    <div style="display:flex;border-bottom:1px solid var(--border2);flex-shrink:0">
+      <button id="bia-tab-config"    onclick="biaTab('config')"    class="bia-tab bia-tab-active">⚙️ Config</button>
+      <button id="bia-tab-triggers"  onclick="biaTab('triggers')"  class="bia-tab">⚡ Gatilhos</button>
+      <button id="bia-tab-log"       onclick="biaTab('log')"       class="bia-tab">📋 Histórico</button>
+    </div>
+
+    <!-- Conteúdo das abas -->
+    <div style="overflow-y:auto;flex:1">
+
+      <!-- ABA CONFIG -->
+      <div id="bia-pane-config" style="padding:1.25rem 1.5rem">
+        <label class="ig-label">Perfil da conta</label>
+        <select id="bia-profile-select" class="ig-input" style="margin-bottom:12px">
+          <option value="franklim">📊 Franklim Paixão — Contadores</option>
+          <option value="pac">🔧 PAC Inteligência Tributária — Oficinas/Autopeças</option>
+        </select>
+
+        <label class="ig-label">Seu username do Instagram (sem @)</label>
+        <input id="bia-username" class="ig-input" type="text" placeholder="ex: franklimpaixao" style="margin-bottom:12px">
+
+        <label class="ig-label">Intervalo de varredura (minutos, mín. 5)</label>
+        <input id="bia-interval" class="ig-input" type="number" min="5" max="60" value="5" style="margin-bottom:12px">
+
+        <label class="ig-label" style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:4px">
+          <input type="checkbox" id="bia-respond-all" style="width:14px;height:14px;accent-color:var(--green)">
+          <span>Responder <strong>todos</strong> os comentários (mesmo sem gatilho)</span>
+        </label>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;margin-left:22px">Desmarcado = responde apenas comentários que contenham uma palavra-chave cadastrada</p>
+
+        <label class="ig-label">Instrução padrão da Bia (opcional)</label>
+        <textarea id="bia-instructions" class="ig-input" rows="2" placeholder="Ex: sempre terminar com uma pergunta para gerar mais engajamento" style="resize:vertical;margin-bottom:14px"></textarea>
+
+        <button class="pl-btn pl-btn-primary" onclick="saveBiaConfig()" style="width:100%">💾 Salvar configuração</button>
+        <div id="bia-save-ok" style="display:none;font-size:11px;color:var(--green);margin-top:8px;text-align:center">✓ Salvo!</div>
+      </div>
+
+      <!-- ABA GATILHOS -->
+      <div id="bia-pane-triggers" style="display:none;padding:1.25rem 1.5rem">
+
+        <!-- ETAPA 1 — Palavra-chave -->
+        <div id="trig-step-1" style="margin-bottom:10px">
+          <div style="font-size:10px;color:var(--text-muted);letter-spacing:2px;font-weight:700;margin-bottom:8px">PASSO 1 — QUANDO alguém comentar com...</div>
+          <input id="trig-keywords" class="ig-input" placeholder="Ex: IA, inteligência artificial, automatizar"
+                 oninput="trigStep1Change()" style="margin-bottom:6px">
+          <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Separe por vírgula para múltiplas palavras. A Bia responde se <strong>qualquer uma</strong> aparecer no comentário.</p>
+
+          <!-- Tags visuais das palavras -->
+          <div id="trig-kw-tags" style="display:flex;flex-wrap:wrap;gap:6px;min-height:24px;margin-bottom:4px"></div>
+        </div>
+
+        <!-- ETAPA 2 — O que responder -->
+        <div id="trig-step-2" style="opacity:.35;pointer-events:none;transition:.2s">
+          <div style="height:1px;background:var(--border);margin:14px 0"></div>
+          <div style="font-size:10px;color:var(--text-muted);letter-spacing:2px;font-weight:700;margin-bottom:12px">PASSO 2 — A Bia vai responder...</div>
+
+          <!-- Seletor de tipo visual -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+            <div id="trig-opt-fixed" onclick="selectTrigType('fixed')"
+                 style="cursor:pointer;border:2px solid var(--green);border-radius:10px;padding:12px;background:#00C89615;text-align:center">
+              <div style="font-size:18px;margin-bottom:4px">📝</div>
+              <div style="font-size:12px;font-weight:700;color:var(--green)">Resposta fixa</div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:2px">Você escreve o texto exato</div>
+            </div>
+            <div id="trig-opt-ai" onclick="selectTrigType('ai')"
+                 style="cursor:pointer;border:2px solid var(--border);border-radius:10px;padding:12px;background:transparent;text-align:center">
+              <div style="font-size:18px;margin-bottom:4px">🤖</div>
+              <div style="font-size:12px;font-weight:700;color:var(--text-sub)">IA cria a resposta</div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:2px">Com sua instrução</div>
+            </div>
+          </div>
+
+          <!-- Área de composição FIXA -->
+          <div id="trig-compose-fixed">
+            <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+              <div style="padding:10px 14px;border-bottom:1px solid var(--border2);display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:11px;color:var(--text-muted)">✍️ Escreva sua resposta abaixo</span>
+                <span id="trig-char-count" style="font-size:11px;color:var(--text-muted);font-family:'JetBrains Mono',monospace">0/120</span>
+              </div>
+              <textarea id="trig-fixed-response" rows="3"
+                oninput="trigCharCount()"
+                placeholder="Digite exatamente o que a Bia vai responder..."
+                style="width:100%;background:transparent;border:none;padding:12px 14px;color:var(--text);font-size:14px;font-family:'Space Grotesk',sans-serif;resize:none;outline:none;box-sizing:border-box"></textarea>
+            </div>
+            <!-- Preview -->
+            <div id="trig-preview-wrap" style="display:none;margin-top:10px">
+              <div style="font-size:10px;color:var(--text-muted);letter-spacing:1px;margin-bottom:6px">PREVIEW — como vai aparecer no Instagram:</div>
+              <div style="background:#1a1a2e;border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+                <div style="font-size:11px;font-weight:700;color:#c084fc;margin-bottom:4px">franklim.contador · Autor</div>
+                <div id="trig-preview-text" style="font-size:13px;color:#fff;line-height:1.5"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Área de instrução IA -->
+          <div id="trig-compose-ai" style="display:none">
+            <div style="background:var(--bg-input);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+              <div style="padding:10px 14px;border-bottom:1px solid var(--border2)">
+                <span style="font-size:11px;color:var(--text-muted)">🤖 Instrua a Bia sobre o que responder</span>
+              </div>
+              <textarea id="trig-ai-instruction" rows="3"
+                placeholder="Ex: convidar a pessoa para DM e falar que uso IA para criar conteúdo contábil"
+                style="width:100%;background:transparent;border:none;padding:12px 14px;color:var(--text);font-size:14px;font-family:'Space Grotesk',sans-serif;resize:none;outline:none;box-sizing:border-box"></textarea>
+            </div>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:6px">A IA vai gerar uma resposta humana e contextual baseada nessa instrução.</p>
+          </div>
+        </div>
+
+        <!-- ETAPA 3 — Nome e salvar -->
+        <div id="trig-step-3" style="opacity:.35;pointer-events:none;transition:.2s;margin-top:14px">
+          <div style="height:1px;background:var(--border);margin-bottom:14px"></div>
+          <input id="trig-label" class="ig-input" placeholder="Nome do gatilho (para identificar na lista)" style="margin-bottom:10px">
+          <button class="pl-btn pl-btn-primary" onclick="addTrigger()" style="width:100%;font-size:13px;padding:12px">
+            ⚡ Criar gatilho
+          </button>
+          <div id="trig-add-error" style="display:none;font-size:11px;color:var(--red);margin-top:6px"></div>
+        </div>
+
+        <!-- Lista de gatilhos ativos -->
+        <div style="margin-top:22px">
+          <div style="font-size:10px;color:var(--text-muted);letter-spacing:2px;font-weight:700;margin-bottom:10px">GATILHOS ATIVOS</div>
+          <div id="bia-triggers-list">
+            <p style="font-size:12px;color:var(--text-muted)">Nenhum gatilho cadastrado ainda.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ABA LOG -->
+      <div id="bia-pane-log" style="display:none;padding:1.25rem 1.5rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div id="bia-modal-log-count" style="font-size:11px;color:var(--text-muted)">–</div>
+          <button class="pl-btn pl-btn-secondary" onclick="loadBiaLog()" style="font-size:10px;padding:4px 10px">🔄 Atualizar</button>
+        </div>
+        <div id="bia-log-list">
+          <p style="font-size:12px;color:var(--text-muted)">Nenhuma resposta ainda.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ ANA MODAL ══ -->
+<div class="ig-overlay" id="ana-overlay">
+  <div class="ig-modal" style="max-width:680px;max-height:92vh;display:flex;flex-direction:column">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border2);flex-shrink:0">
+      <span style="font-size:24px">🎬</span>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:16px;color:#fff">Ana — Criadora de Vídeos</div>
+        <div style="font-size:11px;color:var(--text-muted)">Gancho · Roteiro · Legenda em segundos</div>
+      </div>
+      <button onclick="closeAna()" style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:4px 8px">✕</button>
+    </div>
+
+    <!-- Formulário -->
+    <div id="ana-form" style="padding:1.5rem;border-bottom:1px solid var(--border2);flex-shrink:0">
+
+      <!-- Seletor de perfil -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.25rem">
+        <div id="ana-opt-franklim" onclick="anaSelectProfile('franklim')"
+             style="cursor:pointer;border:2px solid var(--green);border-radius:10px;padding:10px 14px;background:#00C89615;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">📊</span>
+          <div><div style="font-size:12px;font-weight:700;color:var(--green)">Franklim Paixão</div><div style="font-size:10px;color:var(--text-muted)">Para contadores</div></div>
+        </div>
+        <div id="ana-opt-pac" onclick="anaSelectProfile('pac')"
+             style="cursor:pointer;border:2px solid var(--border);border-radius:10px;padding:10px 14px;background:transparent;display:flex;align-items:center;gap:10px">
+          <span style="font-size:20px">🔧</span>
+          <div><div style="font-size:12px;font-weight:700;color:var(--text-sub)">PAC Tributária</div><div style="font-size:10px;color:var(--text-muted)">Para empresários</div></div>
+        </div>
+      </div>
+
+      <label class="ig-label">Tema do vídeo</label>
+      <input id="ana-tema" class="ig-input" placeholder="Ex: Como a Reforma Tributária vai mudar os honorários do contador"
+             onkeydown="if(event.key==='Enter')gerarAna()" style="margin-bottom:10px">
+
+      <label class="ig-label">Detalhes extras (opcional)</label>
+      <input id="ana-extras" class="ig-input" placeholder="Ex: focar na transição 2026-2033, público são escritórios pequenos"
+             onkeydown="if(event.key==='Enter')gerarAna()" style="margin-bottom:14px">
+
+      <button id="ana-gerar-btn" class="pl-btn pl-btn-primary" onclick="gerarAna()" style="width:100%;font-size:14px;padding:13px">
+        🎬 Criar conteúdo com Ana
+      </button>
+    </div>
+
+    <!-- Resultado -->
+    <div id="ana-result" style="display:none;overflow-y:auto;flex:1;padding:1.5rem">
+
+      <!-- Loading -->
+      <div id="ana-loading" style="display:none;text-align:center;padding:2rem">
+        <div style="font-size:28px;margin-bottom:12px">✨</div>
+        <div style="font-size:14px;color:var(--text-sub)">Ana está criando seu conteúdo...</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:6px">Gancho · Roteiro · Legenda</div>
+      </div>
+
+      <!-- Gancho -->
+      <div id="ana-gancho-block" style="display:none;margin-bottom:1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;letter-spacing:2px;font-weight:700;color:var(--yellow)">🎯 GANCHO — PRIMEIROS 3-5 SEGUNDOS</div>
+          <button onclick="anaCopy('ana-gancho-text','ana-copy-gancho')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;color:var(--text-muted);font-size:10px;cursor:pointer">📋 Copiar</button>
+        </div>
+        <div style="background:linear-gradient(135deg,#1a1506,#1a1800);border:1px solid #f5c54240;border-radius:12px;padding:16px 18px">
+          <div id="ana-gancho-text" style="font-size:16px;font-weight:600;color:#fff;line-height:1.5;white-space:pre-wrap"></div>
+        </div>
+        <span id="ana-copy-gancho" style="display:none;font-size:10px;color:var(--green);margin-top:4px">✓ Copiado!</span>
+      </div>
+
+      <!-- Roteiro -->
+      <div id="ana-roteiro-block" style="display:none;margin-bottom:1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;letter-spacing:2px;font-weight:700;color:var(--green)">📝 ROTEIRO COMPLETO</div>
+          <button onclick="anaCopy('ana-roteiro-text','ana-copy-roteiro')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;color:var(--text-muted);font-size:10px;cursor:pointer">📋 Copiar</button>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;max-height:320px;overflow-y:auto">
+          <div id="ana-roteiro-text" style="font-size:13px;color:var(--text);line-height:1.8;white-space:pre-wrap"></div>
+        </div>
+        <span id="ana-copy-roteiro" style="display:none;font-size:10px;color:var(--green);margin-top:4px">✓ Copiado!</span>
+      </div>
+
+      <!-- Legenda -->
+      <div id="ana-legenda-block" style="display:none;margin-bottom:1.25rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div style="font-size:11px;letter-spacing:2px;font-weight:700;color:var(--blue)">📱 LEGENDA INSTAGRAM</div>
+          <button onclick="anaCopy('ana-legenda-text','ana-copy-legenda')" style="background:none;border:1px solid var(--border);border-radius:6px;padding:3px 10px;color:var(--text-muted);font-size:10px;cursor:pointer">📋 Copiar</button>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;max-height:220px;overflow-y:auto">
+          <div id="ana-legenda-text" style="font-size:13px;color:var(--text);line-height:1.7;white-space:pre-wrap"></div>
+        </div>
+        <span id="ana-copy-legenda" style="display:none;font-size:10px;color:var(--green);margin-top:4px">✓ Copiado!</span>
+      </div>
+
+      <!-- Novo -->
+      <button onclick="anaNovoTema()" class="pl-btn pl-btn-secondary" style="width:100%">🔄 Novo tema</button>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

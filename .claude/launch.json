@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "central-ia",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.js"],
+      "cwd": "/Users/franklimpaixao/Documents/CLAUDE/central-ia/backend",
+      "port": 3001
+    }
+  ]
+}
