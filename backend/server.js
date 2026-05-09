@@ -1336,6 +1336,113 @@ app.delete('/api/instagram/triggers/:id', (req, res) => {
 });
 
 /* ══════════════════════════════════════════
+   MÓDULO TRANSCRIÇÃO — WHISPER
+══════════════════════════════════════════ */
+const { transcribeFile } = require('./modules/transcriber');
+
+const uploadAudio = multer({
+  storage: chatStorage,
+  limits : { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.mp3', '.mp4', '.m4a', '.wav', '.ogg', '.webm', '.oga'];
+    const ok = allowed.includes(path.extname(file.originalname).toLowerCase());
+    cb(ok ? null : new Error('Formato não suportado. Use: mp3, mp4, m4a, wav, ogg, webm'), ok);
+  }
+});
+
+app.post('/api/transcrever', uploadAudio.single('file'), async (req, res) => {
+  let filePath;
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
+    filePath = req.file.path;
+    const language = req.body.language || 'pt';
+    const result   = await transcribeFile(filePath, language);
+    fs.unlink(filePath, () => {});
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    if (filePath) fs.unlink(filePath, () => {});
+    console.error('Transcrição erro:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ══════════════════════════════════════════
+   MÓDULO ANÁLISE DE CONCORRENTES
+══════════════════════════════════════════ */
+app.post('/api/concorrente/analisar', async (req, res) => {
+  try {
+    const { username, nicho, seguidores, obs, formatos, contexto, posts } = req.body;
+    if (!username || !posts || posts.length === 0) {
+      return res.status(400).json({ error: 'Username e posts são obrigatórios.' });
+    }
+
+    const postsResumidos = posts.map((p, i) =>
+      `POST ${i + 1} [${p.tipo.toUpperCase()}] likes:${p.likes} comentários:${p.comments}\nLegenda: "${p.caption.slice(0, 400)}"`
+    ).join('\n\n---\n\n');
+
+    const totalLikes    = posts.reduce((s, p) => s + (p.likes || 0), 0);
+    const totalComments = posts.reduce((s, p) => s + (p.comments || 0), 0);
+    const engMedio      = posts.length > 0 ? Math.round((totalLikes + totalComments) / posts.length) : 0;
+
+    const prompt = `Você é um estrategista de Instagram especializado em contabilidade e finanças no Brasil.
+
+Analise o perfil do concorrente @${username} com base nos dados abaixo e gere um relatório estratégico completo para o Franklim Paixão (@franklim.contador), que é um contador especialista em Reforma Tributária e IA para contadores.
+
+DADOS DO CONCORRENTE:
+- Username: @${username}
+- Nicho: ${nicho || 'contador/contabilidade'}
+- Seguidores: ${seguidores ? seguidores.toLocaleString('pt-BR') : 'não informado'}
+- Formatos observados: ${formatos?.join(', ') || 'não informado'}
+- Observações: ${obs || 'nenhuma'}
+- Contexto adicional: ${contexto || 'nenhum'}
+- Posts analisados: ${posts.length}
+- Engajamento médio estimado: ${engMedio} interações/post
+
+POSTS COLETADOS:
+${postsResumidos}
+
+Retorne SOMENTE um JSON válido, sem markdown, sem texto extra, com exatamente esta estrutura:
+{
+  "volumeSemanal": "X posts/sem (estimativa)",
+  "engMedio": "${engMedio} interações",
+  "formatoPrincipal": "tipo dominante",
+  "temaPrincipal": "tema dominante",
+  "posicionamento": "análise do posicionamento e proposta de valor em 3-4 frases",
+  "cadencia": "análise da frequência e horários em 2-3 frases",
+  "tom": "análise do tom, linguagem e voz em 2-3 frases",
+  "temas": "lista dos 5 temas mais recorrentes com breve análise",
+  "formatosAnalise": "análise dos formatos usados e o que funciona melhor",
+  "ctas": "análise dos CTAs utilizados — palavras-chave, direcionamentos, padrões",
+  "oportunidades": [
+    {"titulo": "título curto da oportunidade", "descricao": "como o Franklim pode explorar essa brecha — específico e acionável"},
+    {"titulo": "...", "descricao": "..."},
+    {"titulo": "...", "descricao": "..."}
+  ],
+  "planoAcao": [
+    {"acao": "ação em até 8 palavras", "como": "como executar em 1-2 frases diretas"},
+    {"acao": "...", "como": "..."},
+    {"acao": "...", "como": "..."},
+    {"acao": "...", "como": "..."}
+  ]
+}`;
+
+    const msg = await claude.messages.create({
+      model     : 'claude-opus-4-5',
+      max_tokens: 2000,
+      messages  : [{ role: 'user', content: prompt }]
+    });
+
+    const raw    = msg.content[0].text.trim().replace(/^```json|^```|```$/g, '').trim();
+    const report = JSON.parse(raw);
+
+    res.json({ ok: true, report });
+  } catch (err) {
+    console.error('Análise concorrente erro:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ══════════════════════════════════════════
    MÓDULO PROPOSTA COMERCIAL + PRECIFICAÇÃO
 ══════════════════════════════════════════ */
 const PROPOSTA_SYSTEM = `Você é o PropostaAI, especialista em vendas e precificação para escritórios de contabilidade brasileiros.

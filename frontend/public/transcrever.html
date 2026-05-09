@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transcrever Vídeo — Central IA</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#e8e8e8;font-family:'Courier New',monospace;font-size:13px;min-height:100vh}
+.topbar{background:#111;border-bottom:1px solid #222;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.logo{color:#b8ff57;font-weight:700;font-size:14px;letter-spacing:.05em}
+.breadcrumb{color:#555;font-size:11px;margin-left:12px}
+.btn{background:transparent;border:1px solid #333;color:#aaa;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:11px;transition:all .15s}
+.btn:hover{border-color:#b8ff57;color:#b8ff57}
+.btn-primary{background:#b8ff57;color:#0a0a0a;border-color:#b8ff57;font-weight:700}
+.btn-primary:hover{background:#c8ff77}
+.btn-primary:disabled{background:#3a4a1a;color:#556a22;border-color:#3a4a1a;cursor:not-allowed}
+.btn-sm{padding:4px 10px;font-size:10px}
+.container{max-width:860px;margin:0 auto;padding:24px 20px}
+.section-title{font-size:10px;letter-spacing:.08em;color:#555;text-transform:uppercase;margin:24px 0 10px;border-bottom:1px solid #1a1a1a;padding-bottom:6px}
+.drop-zone{border:1px dashed #333;border-radius:8px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#0f0f0f}
+.drop-zone:hover,.drop-zone.drag-over{border-color:#b8ff57;background:#0f1a0a}
+.drop-icon{font-size:32px;margin-bottom:12px}
+.drop-title{font-size:14px;font-weight:700;color:#aaa;margin-bottom:6px}
+.drop-sub{font-size:11px;color:#444;line-height:1.6}
+.drop-formats{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:12px}
+.format-tag{font-size:9px;padding:2px 8px;border-radius:999px;background:#1a1a1a;color:#555;border:1px solid #222}
+.file-info{background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-top:10px}
+.file-name{font-size:12px;font-weight:700;color:#e8e8e8}
+.file-size{font-size:10px;color:#555}
+.options-row{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.label{font-size:11px;color:#555}
+select{background:#111;border:1px solid #333;color:#aaa;padding:5px 10px;border-radius:4px;font-family:inherit;font-size:11px;cursor:pointer}
+select:focus{outline:none;border-color:#b8ff57}
+.progress-wrap{background:#1a1a1a;border-radius:4px;height:3px;overflow:hidden}
+.progress-bar{height:100%;background:#b8ff57;width:0;transition:width .3s}
+.progress-label{font-size:10px;color:#555;margin-top:6px;text-align:center}
+.result-card{background:#111;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;margin-top:8px}
+.result-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #1a1a1a}
+.result-title{font-size:11px;font-weight:700;color:#aaa}
+.result-actions{display:flex;gap:6px}
+.result-body{padding:14px;max-height:320px;overflow-y:auto}
+.transcript-text{font-size:12px;line-height:1.8;color:#ccc;white-space:pre-wrap}
+.srt-text{font-size:11px;line-height:1.6;color:#888;white-space:pre;font-family:'Courier New',monospace}
+.stats-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+.stat{background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:10px 14px;flex:1;min-width:100px}
+.stat-val{font-size:18px;font-weight:700;color:#e8e8e8}
+.stat-label{font-size:10px;color:#555;margin-top:2px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #333;border-top-color:#b8ff57;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hidden{display:none}
+.error-box{background:#1a0a0a;border:1px solid #ff5757;border-radius:6px;padding:12px 14px;color:#ff5757;font-size:12px;margin-top:10px}
+.tip-box{background:#0f1a0a;border:1px solid #2a3a1a;border-radius:6px;padding:10px 14px;font-size:11px;color:#6a8a4a;line-height:1.6;margin-top:10px}
+.copied{color:#b8ff57!important;border-color:#b8ff57!important}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div style="display:flex;align-items:center"><span class="logo">CENTRAL IA</span><span class="breadcrumb">// TRANSCREVER VÍDEO · WHISPER</span></div>
+  <div style="display:flex;gap:8px"><a href="/" class="btn">← Voltar</a></div>
+</div>
+<div class="container">
+  <div class="section-title">◉ upload — áudio ou vídeo</div>
+  <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <div class="drop-icon">🎙️</div>
+    <div class="drop-title">Arraste o arquivo aqui ou clique para selecionar</div>
+    <div class="drop-sub">Sobe o áudio do reel e recebe a transcrição + legenda pronta<br>para importar no CapCut ou Instagram</div>
+    <div class="drop-formats"><span class="format-tag">MP3</span><span class="format-tag">MP4</span><span class="format-tag">M4A</span><span class="format-tag">WAV</span><span class="format-tag">OGG</span><span class="format-tag">WEBM</span></div>
+  </div>
+  <input type="file" id="fileInput" accept=".mp3,.mp4,.m4a,.wav,.ogg,.webm,.oga" style="display:none">
+  <div id="fileInfo" class="file-info hidden">
+    <span style="font-size:20px">🎵</span>
+    <div><div class="file-name" id="fileName"></div><div class="file-size" id="fileSize"></div></div>
+    <button class="btn btn-sm" onclick="clearFile()" style="margin-left:auto">✕ Remover</button>
+  </div>
+  <div class="tip-box" id="sizeTip" style="display:none">⚠️ Arquivo acima de 20MB. Extraia só o áudio antes de subir. No CapCut: Exportar → apenas áudio. No FFmpeg: ffmpeg -i video.mp4 -vn audio.mp3</div>
+  <div class="options-row">
+    <span class="label">Idioma:</span>
+    <select id="language"><option value="pt" selected>Português 🇧🇷</option><option value="en">English 🇺🇸</option><option value="es">Español 🇪🇸</option></select>
+    <button class="btn btn-primary" id="transcribeBtn" onclick="transcribe()" disabled>🎙️ Transcrever</button>
+  </div>
+  <div id="progressWrap" class="hidden" style="margin-top:16px">
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-label" id="progressLabel">Enviando arquivo...</div>
+  </div>
+  <div id="errorBox" class="error-box hidden"></div>
+  <div id="results" class="hidden">
+    <div class="section-title">◉ resultado</div>
+    <div class="stats-row" id="statsRow"></div>
+    <div class="section-title">◉ transcrição</div>
+    <div class="result-card">
+      <div class="result-header"><span class="result-title">TEXTO COMPLETO</span><div class="result-actions"><button class="btn btn-sm" id="copyTextBtn" onclick="copyText()">📋 Copiar</button></div></div>
+      <div class="result-body"><div class="transcript-text" id="transcriptText"></div></div>
+    </div>
+    <div id="srtSection" class="hidden">
+      <div class="section-title">◉ legendas</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="btn btn-primary btn-sm" onclick="downloadSrt()">⬇️ Baixar .SRT</button>
+        <button class="btn btn-primary btn-sm" onclick="downloadVtt()">⬇️ Baixar .VTT</button>
+        <button class="btn btn-sm" onclick="toggleSrtPreview()">👁 Preview</button>
+      </div>
+      <div id="srtPreview" class="result-card hidden">
+        <div class="result-header"><span class="result-title">PREVIEW SRT</span></div>
+        <div class="result-body"><div class="srt-text" id="srtText"></div></div>
+      </div>
+    </div>
+    <div class="tip-box" style="margin-top:16px">💡 <strong>Como usar:</strong> Instagram Reels → Legendas → Importar → .SRT. CapCut: Texto → Legendas automáticas → Importar .SRT.</div>
+    <div style="margin-top:16px"><button class="btn" onclick="clearAll()">↻ Nova transcrição</button></div>
+  </div>
+</div>
+<script>
+const AUTH_KEY='cia_token',token=localStorage.getItem(AUTH_KEY)||'';
+let currentFile=null,resultData=null;
+function fmtSize(b){if(b>1024*1024)return(b/1024/1024).toFixed(1)+' MB';return(b/1024).toFixed(0)+' KB';}
+function fmtDuration(s){return`${Math.floor(s/60)}m ${s%60}s`;}
+const dropZone=document.getElementById('dropZone'),fileInput=document.getElementById('fileInput');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag-over');handleFile(e.dataTransfer.files[0]);});
+fileInput.addEventListener('change',()=>handleFile(fileInput.files[0]));
+function handleFile(f){if(!f)return;currentFile=f;document.getElementById('fileName').textContent=f.name;document.getElementById('fileSize').textContent=fmtSize(f.size);document.getElementById('fileInfo').classList.remove('hidden');document.getElementById('transcribeBtn').disabled=false;document.getElementById('sizeTip').style.display=f.size>20*1024*1024?'block':'none';document.getElementById('results').classList.add('hidden');document.getElementById('errorBox').classList.add('hidden');}
+function clearFile(){currentFile=null;fileInput.value='';document.getElementById('fileInfo').classList.add('hidden');document.getElementById('transcribeBtn').disabled=true;document.getElementById('sizeTip').style.display='none';}
+function clearAll(){clearFile();document.getElementById('results').classList.add('hidden');document.getElementById('errorBox').classList.add('hidden');resultData=null;}
+async function transcribe(){
+  if(!currentFile)return;
+  const btn=document.getElementById('transcribeBtn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Transcrevendo...';
+  document.getElementById('progressWrap').classList.remove('hidden');
+  document.getElementById('errorBox').classList.add('hidden');
+  document.getElementById('results').classList.add('hidden');
+  animateProgress();
+  try{
+    const form=new FormData();
+    form.append('file',currentFile);
+    form.append('language',document.getElementById('language').value);
+    const res=await fetch('/api/transcrever',{method:'POST',headers:token?{Authorization:'Bearer '+token}:{},body:form});
+    const data=await res.json();
+    if(!res.ok||!data.ok)throw new Error(data.error||'Erro na transcrição.');
+    resultData=data;renderResults(data);
+  }catch(err){document.getElementById('errorBox').textContent='❌ '+err.message;document.getElementById('errorBox').classList.remove('hidden');}
+  finally{btn.disabled=false;btn.innerHTML='🎙️ Transcrever';document.getElementById('progressWrap').classList.add('hidden');document.getElementById('progressBar').style.width='0';}
+}
+let pi=null;
+function animateProgress(){
+  let pct=0;const bar=document.getElementById('progressBar'),lbl=document.getElementById('progressLabel');
+  const steps=[[10,'Enviando arquivo...'],[35,'Processando áudio...'],[65,'Transcrevendo com Whisper...'],[85,'Gerando legendas...'],[95,'Finalizando...']];
+  let step=0;clearInterval(pi);
+  pi=setInterval(()=>{if(step<steps.length&&pct>=steps[step][0]-5){lbl.textContent=steps[step][1];step++;}if(pct<95){pct+=1.5;bar.style.width=pct+'%';}},300);
+}
+function renderResults(data){
+  const stats=[{val:fmtDuration(data.duration||0),label:'duração'},{val:data.wordCount||0,label:'palavras'},{val:(data.segments||[]).length,label:'segmentos'},{val:(data.language||'pt').toUpperCase(),label:'idioma detectado'}];
+  document.getElementById('statsRow').innerHTML=stats.map(s=>`<div class="stat"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+  document.getElementById('transcriptText').textContent=data.text||'';
+  if(data.srt){document.getElementById('srtSection').classList.remove('hidden');document.getElementById('srtText').textContent=data.srt;}
+  else document.getElementById('srtSection').classList.add('hidden');
+  document.getElementById('results').classList.remove('hidden');
+}
+function copyText(){if(!resultData?.text)return;navigator.clipboard.writeText(resultData.text).then(()=>{const b=document.getElementById('copyTextBtn');b.textContent='✓ Copiado!';b.classList.add('copied');setTimeout(()=>{b.textContent='📋 Copiar';b.classList.remove('copied');},2000);});}
+function downloadSrt(){if(resultData?.srt)dl(resultData.srt,getBase()+'.srt','text/plain');}
+function downloadVtt(){if(resultData?.vtt)dl(resultData.vtt,getBase()+'.vtt','text/vtt');}
+function dl(c,n,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:t}));a.download=n;a.click();URL.revokeObjectURL(a.href);}
+function getBase(){return currentFile?currentFile.name.replace(/\.[^.]+$/,''):'transcricao';}
+function toggleSrtPreview(){document.getElementById('srtPreview').classList.toggle('hidden');}
+(async()=>{try{const c=await fetch('/api/auth/check',{headers:token?{Authorization:'Bearer '+token}:{}});const{ok,required}=await c.json();if(required&&!ok)window.location.href='/?redirect=transcrever.html';}catch(e){}})();
+</script>
+</body>
+</html>

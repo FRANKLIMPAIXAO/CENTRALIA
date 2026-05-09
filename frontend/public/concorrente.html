@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisar Concorrente — Central IA</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0a0a0a;color:#e8e8e8;font-family:'Courier New',monospace;font-size:13px;min-height:100vh}
+.topbar{background:#111;border-bottom:1px solid #222;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.logo{color:#b8ff57;font-weight:700;font-size:14px;letter-spacing:.05em}
+.breadcrumb{color:#555;font-size:11px;margin-left:12px}
+.btn{background:transparent;border:1px solid #333;color:#aaa;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:11px;transition:all .15s}
+.btn:hover{border-color:#b8ff57;color:#b8ff57}
+.btn-primary{background:#b8ff57;color:#0a0a0a;border-color:#b8ff57;font-weight:700}
+.btn-primary:hover{background:#c8ff77}
+.btn-primary:disabled{background:#3a4a1a;color:#556a22;border-color:#3a4a1a;cursor:not-allowed}
+.btn-sm{padding:4px 10px;font-size:10px}
+.container{max-width:900px;margin:0 auto;padding:24px 20px}
+.section-title{font-size:10px;letter-spacing:.08em;color:#555;text-transform:uppercase;margin:24px 0 10px;border-bottom:1px solid #1a1a1a;padding-bottom:6px}
+.card{background:#111;border:1px solid #1e1e1e;border-radius:8px;padding:16px;margin-bottom:10px}
+.input-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+.input-group{display:flex;flex-direction:column;gap:4px;flex:1}
+.input-label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.04em}
+input[type=text],input[type=number]{background:#0a0a0a;border:1px solid #2a2a2a;color:#e8e8e8;padding:8px 10px;border-radius:4px;font-family:inherit;font-size:12px;width:100%}
+input[type=text]:focus,input[type=number]:focus{outline:none;border-color:#b8ff57}
+input[type=number]{width:100%}
+textarea{background:#0a0a0a;border:1px solid #2a2a2a;color:#e8e8e8;padding:10px 12px;border-radius:4px;font-family:inherit;font-size:12px;width:100%;resize:vertical;line-height:1.6}
+textarea:focus{outline:none;border-color:#b8ff57}
+.post-entry{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:6px;padding:12px;margin-bottom:8px;position:relative}
+.post-num{font-size:10px;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+.post-grid{display:grid;grid-template-columns:1fr 80px 80px 80px;gap:8px;align-items:start}
+.remove-btn{position:absolute;top:10px;right:10px;background:transparent;border:none;color:#444;cursor:pointer;font-size:14px;padding:2px 6px}
+.remove-btn:hover{color:#ff5757}
+.add-post-btn{width:100%;padding:10px;background:transparent;border:1px dashed #2a2a2a;color:#444;border-radius:6px;cursor:pointer;font-family:inherit;font-size:11px;transition:all .15s;margin-top:4px}
+.add-post-btn:hover{border-color:#b8ff57;color:#b8ff57}
+.format-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.format-tag{font-size:10px;padding:3px 10px;border-radius:999px;border:1px solid #2a2a2a;color:#555;cursor:pointer;transition:all .15s;user-select:none}
+.format-tag.active{background:#1a2a1a;border-color:#b8ff57;color:#b8ff57}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #333;border-top-color:#b8ff57;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hidden{display:none}
+.error-box{background:#1a0a0a;border:1px solid #ff5757;border-radius:6px;padding:12px 14px;color:#ff5757;font-size:12px;margin-top:10px}
+.report-block{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:6px;padding:14px;margin-bottom:8px}
+.report-block-title{font-size:10px;font-weight:700;color:#b8ff57;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.report-text{font-size:12px;color:#ccc;line-height:1.8;white-space:pre-wrap}
+.score-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:16px}
+.score-card{background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:10px 12px}
+.score-val{font-size:16px;font-weight:700;color:#e8e8e8}
+.score-label{font-size:10px;color:#555;margin-top:2px}
+.insight-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #1a1a1a}
+.insight-item:last-child{border-bottom:none}
+.insight-ico{font-size:16px;flex-shrink:0;margin-top:1px}
+.insight-body{font-size:12px;color:#ccc;line-height:1.6}
+.insight-body strong{color:#e8e8e8;font-weight:700}
+.opp-item{border-left:3px solid #b8ff57;padding:8px 12px;margin-bottom:8px;background:#0a0a0a;border-radius:0 4px 4px 0}
+.opp-title{font-size:12px;font-weight:700;color:#e8e8e8;margin-bottom:3px}
+.opp-body{font-size:11px;color:#888;line-height:1.5}
+.tip-box{background:#0f1a0a;border:1px solid #2a3a1a;border-radius:6px;padding:10px 14px;font-size:11px;color:#6a8a4a;line-height:1.6}
+.progress-wrap{background:#1a1a1a;border-radius:4px;height:3px;overflow:hidden}
+.progress-bar{height:100%;background:#b8ff57;width:0;transition:width .4s}
+.progress-label{font-size:10px;color:#555;margin-top:6px;text-align:center}
+.tab-row{display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid #1a1a1a}
+.tab{padding:8px 14px;font-size:11px;cursor:pointer;color:#555;border-bottom:2px solid transparent;transition:all .15s;font-family:inherit;background:none;border-top:none;border-left:none;border-right:none}
+.tab.active{color:#b8ff57;border-bottom-color:#b8ff57}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.copy-btn{font-size:10px;color:#555;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:4px;padding:4px 10px;cursor:pointer}
+.copy-btn:hover{color:#e8e8e8}
+.copied-state{color:#b8ff57!important;border-color:#b8ff57!important}
+select.post-tipo{background:#0a0a0a;border:1px solid #2a2a2a;color:#aaa;padding:6px 8px;border-radius:4px;font-family:inherit;font-size:11px;width:100%}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div style="display:flex;align-items:center"><span class="logo">CENTRAL IA</span><span class="breadcrumb">// ANÁLISE DE CONCORRENTE</span></div>
+  <div style="display:flex;gap:8px"><a href="/" class="btn">← Voltar</a></div>
+</div>
+<div class="container">
+
+  <div class="section-title">◉ identificação do concorrente</div>
+  <div class="card">
+    <div class="input-row">
+      <div class="input-group"><span class="input-label">@ Username</span><input type="text" id="username" placeholder="ex: contador.silva" oninput="this.value=this.value.replace('@','')"></div>
+      <div class="input-group" style="max-width:160px"><span class="input-label">Nicho / especialidade</span><input type="text" id="nicho" placeholder="ex: reforma tributária"></div>
+      <div class="input-group" style="max-width:110px"><span class="input-label">Seguidores aprox.</span><input type="number" id="seguidores" placeholder="ex: 5000" min="0"></div>
+    </div>
+    <div class="input-group"><span class="input-label">Observações iniciais (opcional)</span><input type="text" id="obs" placeholder="ex: posta todo dia, foco em IA, muito engagement nos reels"></div>
+  </div>
+
+  <div class="section-title">◉ cole as legendas dos posts</div>
+  <div class="tip-box" style="margin-bottom:10px">📱 <strong>Como coletar:</strong> Abre o perfil → entra em cada post → copia a legenda completa. Cole 10–15 posts para análise precisa.</div>
+  <div id="postsContainer"></div>
+  <button class="add-post-btn" onclick="addPost()">+ Adicionar post</button>
+
+  <div class="section-title">◉ contexto da análise</div>
+  <div class="card">
+    <div class="input-group" style="margin-bottom:10px">
+      <span class="input-label">Formatos que você observou no perfil</span>
+      <div class="format-tags" id="formatTags">
+        <span class="format-tag" onclick="toggleFormat(this)">Reels</span>
+        <span class="format-tag" onclick="toggleFormat(this)">Carrossel</span>
+        <span class="format-tag" onclick="toggleFormat(this)">Foto</span>
+        <span class="format-tag" onclick="toggleFormat(this)">Stories</span>
+        <span class="format-tag" onclick="toggleFormat(this)">Lives</span>
+      </div>
+    </div>
+    <div class="input-group">
+      <span class="input-label">O que mais te chama atenção no perfil? (opcional)</span>
+      <textarea id="contexto" rows="2" placeholder="ex: os reels dele viralizam muito, usa muito REFORMA, sempre CTA pra direct..."></textarea>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
+    <button class="btn btn-primary" id="analyzeBtn" onclick="analyze()">🔍 Analisar concorrente</button>
+    <button class="btn btn-sm" onclick="clearAll()">↻ Limpar tudo</button>
+  </div>
+
+  <div id="progressWrap" class="hidden" style="margin-top:16px">
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-label" id="progressLabel">Analisando conteúdo...</div>
+  </div>
+  <div id="errorBox" class="error-box hidden"></div>
+
+  <div id="report" class="hidden">
+    <div class="section-title" style="margin-top:32px">◉ relatório — <span id="reportUsername"></span></div>
+    <div class="score-grid" id="scoreGrid"></div>
+    <div class="tab-row">
+      <button class="tab active" onclick="switchTab('estrategia',this)">Estratégia</button>
+      <button class="tab" onclick="switchTab('conteudo',this)">Conteúdo</button>
+      <button class="tab" onclick="switchTab('oportunidades',this)">Oportunidades</button>
+      <button class="tab" onclick="switchTab('acao',this)">Plano de ação</button>
+    </div>
+    <div id="tab-estrategia" class="tab-content active">
+      <div class="report-block"><div class="report-block-title">Posicionamento</div><div class="report-text" id="r-posicionamento"></div></div>
+      <div class="report-block"><div class="report-block-title">Cadência e frequência</div><div class="report-text" id="r-cadencia"></div></div>
+      <div class="report-block"><div class="report-block-title">Tom e linguagem</div><div class="report-text" id="r-tom"></div></div>
+    </div>
+    <div id="tab-conteudo" class="tab-content">
+      <div class="report-block"><div class="report-block-title">Temas mais explorados</div><div class="report-text" id="r-temas"></div></div>
+      <div class="report-block"><div class="report-block-title">Formatos e estrutura</div><div class="report-text" id="r-formatos"></div></div>
+      <div class="report-block"><div class="report-block-title">CTAs utilizados</div><div class="report-text" id="r-ctas"></div></div>
+    </div>
+    <div id="tab-oportunidades" class="tab-content"><div id="r-oportunidades"></div></div>
+    <div id="tab-acao" class="tab-content">
+      <div id="r-acao"></div>
+      <div style="margin-top:12px"><button class="copy-btn" id="copyReportBtn" onclick="copyReport()">📋 Copiar relatório completo</button></div>
+    </div>
+  </div>
+
+</div>
+<script>
+const AUTH_KEY='cia_token',token=localStorage.getItem(AUTH_KEY)||'';
+let postCount=0,reportRaw=null;
+
+function addPost(caption='',likes='',comments=''){
+  postCount++;
+  const n=postCount,div=document.createElement('div');
+  div.className='post-entry';div.id=`post-${n}`;
+  div.innerHTML=`<div class="post-num">Post ${n}</div><button class="remove-btn" onclick="removePost(${n})">✕</button><textarea rows="3" id="caption-${n}" placeholder="Cole a legenda completa aqui...">${caption}</textarea><div class="post-grid" style="margin-top:8px"><div class="input-group"><span class="input-label">Tipo</span><select id="tipo-${n}" class="post-tipo"><option value="reel">Reel</option><option value="carrossel">Carrossel</option><option value="foto">Foto</option><option value="video">Vídeo</option></select></div><div class="input-group"><span class="input-label">Likes</span><input type="number" id="likes-${n}" placeholder="120" value="${likes}" min="0"></div><div class="input-group"><span class="input-label">Comentários</span><input type="number" id="comments-${n}" placeholder="8" value="${comments}" min="0"></div></div>`;
+  document.getElementById('postsContainer').appendChild(div);
+}
+function removePost(n){const el=document.getElementById(`post-${n}`);if(el)el.remove();}
+function toggleFormat(el){el.classList.toggle('active');}
+function getFormats(){return Array.from(document.querySelectorAll('.format-tag.active')).map(el=>el.textContent);}
+function getPosts(){
+  const posts=[];
+  document.querySelectorAll('.post-entry').forEach(entry=>{
+    const id=entry.id.replace('post-','');
+    const caption=(document.getElementById(`caption-${id}`)?.value||'').trim();
+    if(!caption)return;
+    posts.push({tipo:document.getElementById(`tipo-${id}`)?.value||'reel',caption,likes:parseInt(document.getElementById(`likes-${id}`)?.value||'0')||0,comments:parseInt(document.getElementById(`comments-${id}`)?.value||'0')||0});
+  });
+  return posts;
+}
+function clearAll(){
+  document.getElementById('postsContainer').innerHTML='';
+  ['username','nicho','seguidores','obs','contexto'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.querySelectorAll('.format-tag.active').forEach(el=>el.classList.remove('active'));
+  document.getElementById('report').classList.add('hidden');
+  document.getElementById('errorBox').classList.add('hidden');
+  postCount=0;reportRaw=null;
+  addPost();addPost();addPost();
+}
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');
+}
+async function analyze(){
+  const username=document.getElementById('username').value.trim();
+  const posts=getPosts();
+  if(!username){alert('Informe o @username do concorrente.');return;}
+  if(posts.length===0){alert('Cole pelo menos 1 legenda de post.');return;}
+  const btn=document.getElementById('analyzeBtn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Analisando...';
+  document.getElementById('progressWrap').classList.remove('hidden');
+  document.getElementById('errorBox').classList.add('hidden');
+  document.getElementById('report').classList.add('hidden');
+  animateProgress();
+  const payload={username,nicho:document.getElementById('nicho').value.trim(),seguidores:parseInt(document.getElementById('seguidores').value||'0')||0,obs:document.getElementById('obs').value.trim(),formatos:getFormats(),contexto:document.getElementById('contexto').value.trim(),posts};
+  try{
+    const res=await fetch('/api/concorrente/analisar',{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(payload)});
+    const data=await res.json();
+    if(!res.ok||!data.ok)throw new Error(data.error||'Erro na análise.');
+    reportRaw=data.report;renderReport(username,data.report);
+  }catch(err){document.getElementById('errorBox').textContent='❌ '+err.message;document.getElementById('errorBox').classList.remove('hidden');}
+  finally{btn.disabled=false;btn.innerHTML='🔍 Analisar concorrente';document.getElementById('progressWrap').classList.add('hidden');document.getElementById('progressBar').style.width='0';}
+}
+let pi=null;
+function animateProgress(){
+  let pct=0;const bar=document.getElementById('progressBar'),lbl=document.getElementById('progressLabel');
+  const steps=[[10,'Lendo legendas...'],[30,'Identificando padrões...'],[55,'Analisando estratégia...'],[75,'Mapeando oportunidades...'],[90,'Montando plano de ação...']];
+  let step=0;clearInterval(pi);
+  pi=setInterval(()=>{if(step<steps.length&&pct>=steps[step][0]-5){lbl.textContent=steps[step][1];step++;}if(pct<95){pct+=1;bar.style.width=pct+'%';}},400);
+}
+function renderReport(username,r){
+  document.getElementById('reportUsername').textContent='@'+username;
+  const scores=[{val:r.volumeSemanal||'—',label:'posts/semana'},{val:r.engMedio||'—',label:'eng. médio estimado'},{val:r.formatoPrincipal||'—',label:'formato dominante'},{val:r.temaPrincipal||'—',label:'tema dominante'}];
+  document.getElementById('scoreGrid').innerHTML=scores.map(s=>`<div class="score-card"><div class="score-val">${s.val}</div><div class="score-label">${s.label}</div></div>`).join('');
+  set('r-posicionamento',r.posicionamento);set('r-cadencia',r.cadencia);set('r-tom',r.tom);
+  set('r-temas',r.temas);set('r-formatos',r.formatosAnalise);set('r-ctas',r.ctas);
+  const opps=r.oportunidades||[];
+  document.getElementById('r-oportunidades').innerHTML=opps.length?opps.map(o=>`<div class="opp-item"><div class="opp-title">${o.titulo}</div><div class="opp-body">${o.descricao}</div></div>`).join(''):'<div class="report-block"><div class="report-text">Nenhuma oportunidade com os dados fornecidos.</div></div>';
+  const acoes=r.planoAcao||[];
+  document.getElementById('r-acao').innerHTML=acoes.length?acoes.map((a,i)=>`<div class="insight-item"><span class="insight-ico">${i<3?['🥇','🥈','🥉'][i]:'▸'}</span><div class="insight-body"><strong>${a.acao}</strong><br>${a.como}</div></div>`).join(''):'<div class="report-text" style="color:#555">Dados insuficientes.</div>';
+  document.getElementById('report').classList.remove('hidden');
+  document.getElementById('report').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function set(id,val){const el=document.getElementById(id);if(el)el.textContent=val||'—';}
+function copyReport(){
+  if(!reportRaw)return;
+  const u=document.getElementById('username').value;
+  const text=`ANÁLISE DE CONCORRENTE — @${u}\n\nPOSICIONAMENTO:\n${reportRaw.posicionamento}\n\nCADÊNCIA:\n${reportRaw.cadencia}\n\nTOM:\n${reportRaw.tom}\n\nTEMAS:\n${reportRaw.temas}\n\nFORMATOS:\n${reportRaw.formatosAnalise}\n\nCTAs:\n${reportRaw.ctas}\n\nOPORTUNIDADES:\n${(reportRaw.oportunidades||[]).map(o=>`• ${o.titulo}: ${o.descricao}`).join('\n')}\n\nPLANO DE AÇÃO:\n${(reportRaw.planoAcao||[]).map((a,i)=>`${i+1}. ${a.acao} — ${a.como}`).join('\n')}`;
+  navigator.clipboard.writeText(text).then(()=>{const b=document.getElementById('copyReportBtn');b.textContent='✓ Copiado!';b.classList.add('copied-state');setTimeout(()=>{b.textContent='📋 Copiar relatório completo';b.classList.remove('copied-state');},2500);});
+}
+(async()=>{
+  try{const c=await fetch('/api/auth/check',{headers:token?{Authorization:'Bearer '+token}:{}});const{ok,required}=await c.json();if(required&&!ok){window.location.href='/?redirect=concorrente.html';return;}}catch(e){}
+  addPost();addPost();addPost();
+})();
+</script>
+</body>
+</html>
