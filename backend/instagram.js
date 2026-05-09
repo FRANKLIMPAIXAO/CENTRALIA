@@ -515,8 +515,8 @@ async function runAutoResponder(claudeClient) {
       });
 
       totalRecent += recentComments.length;
-      if (commentList.length > 0)
-        console.log(`   post …${post.id.slice(-8)}: ${commentList.length} total, ${recentComments.length} recentes`);
+      // Loga TODOS os posts para debug (mesmo sem comentários recentes)
+      console.log(`   post …${post.id.slice(-8)}: ${commentList.length} total, ${recentComments.length} recentes`);
 
       for (const comment of recentComments) {
         // Extrai username — IGAAN retorna em from.username ou username
