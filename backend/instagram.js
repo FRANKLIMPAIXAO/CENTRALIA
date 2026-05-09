@@ -357,7 +357,8 @@ function appendArLog(entry) {
 
 async function fetchRecentPosts(igUserId, accessToken) {
   const base = getGraphBase(accessToken);
-  const qs   = new URLSearchParams({ fields: 'id,caption,timestamp,comments_count', limit: '10', access_token: accessToken });
+  // limit=25 para cobrir posts mais antigos que podem ter comentários novos
+  const qs   = new URLSearchParams({ fields: 'id,caption,timestamp,comments_count', limit: '25', access_token: accessToken });
   const res  = await fetch(`${base}/${igUserId}/media?${qs}`);
   const data = await res.json();
   const err  = igError(data); if (err) throw err;
@@ -497,7 +498,9 @@ async function runAutoResponder(claudeClient) {
     console.log(`   gatilhos: ${triggers.length} | ${triggers.map(t=>t.keywords[0]).join(', ')}`);
     const posts    = await fetchRecentPosts(cfg.igUserId, cfg.accessToken);
     const postList = posts.data || [];
+    console.log(`   ${postList.length} posts verificados | janela: ${maxAgeHours}h | cutoff: ${cutoffTime.toLocaleTimeString('pt-BR')}`);
     let   total    = 0;
+    let   totalRecent = 0;
 
     for (const post of postList) {
       let comments;
@@ -507,12 +510,13 @@ async function runAutoResponder(claudeClient) {
       const commentList = comments.data || [];
       // Filtra só comentários recentes
       const recentComments = commentList.filter(c => {
-        if (!c.timestamp) return true; // sem data → processa
+        if (!c.timestamp) return true;
         return new Date(c.timestamp) >= cutoffTime;
       });
 
-      if (recentComments.length > 0)
-        console.log(`   post ${post.id}: ${recentComments.length} comentário(s) recente(s) (de ${commentList.length} total)`);
+      totalRecent += recentComments.length;
+      if (commentList.length > 0)
+        console.log(`   post …${post.id.slice(-8)}: ${commentList.length} total, ${recentComments.length} recentes`);
 
       for (const comment of recentComments) {
         // Extrai username — IGAAN retorna em from.username ou username
@@ -611,7 +615,7 @@ async function runAutoResponder(claudeClient) {
       }
     }
 
-    if (total > 0) console.log(`💬 Bia [${arCfg.profile}]: ${total} comentário(s) respondido(s).`);
+    console.log(`💬 Bia resumo: ${totalRecent} comentários recentes encontrados, ${total} respondidos.`);
   } catch (e) {
     console.error('❌ Auto-responder erro:', e.message);
   }
