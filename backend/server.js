@@ -1014,6 +1014,201 @@ app.post('/api/ana/gerar', async (req, res) => {
 });
 
 /* ══════════════════════════════════════════
+   CALENDÁRIO EDITORIAL — ANA
+══════════════════════════════════════════ */
+const CALENDAR_PATH = path.join(__dirname, 'calendar.json');
+
+function readCalendar() {
+  try { return JSON.parse(fs.readFileSync(CALENDAR_PATH, 'utf8')); }
+  catch { return []; }
+}
+function writeCalendar(arr) {
+  fs.writeFileSync(CALENDAR_PATH, JSON.stringify(arr, null, 2), 'utf8');
+}
+
+const CALENDAR_PROMPT = {
+  franklim: `Você é Ana, criadora de conteúdo para @franklim.contador — contador especialista em Reforma Tributária (IBS/CBS) e IA para contadores. Público: contadores 35-44 anos, donos de escritório.
+
+Cadência semanal OBRIGATÓRIA:
+- Segunda: folga (não incluir)
+- Terça: Reel — Pessoal/emocional (vulnerabilidade, bastidor pessoal, história)
+- Quarta: Carrossel — Técnico com save (checklist, tabela, framework, prompt pronto)
+- Quinta: Reel — Bastidor/ferramenta (IA, Claude, automação, sistema)
+- Sexta: Reel — Polêmico/provocativo (opinião forte, dado chocante, debate do setor)
+- Sábado: Imagem/quote — Leve (motivacional, reflexivo, bastidor leve)
+- Domingo: folga (não incluir)
+
+Para cada dia de publicação gere temas ESPECÍFICOS e CONCRETOS sobre Reforma Tributária, IBS/CBS, IA na contabilidade, gestão de escritório, precificação, Split Payment.
+
+RETORNE SOMENTE JSON VÁLIDO sem markdown:
+{"days":[{"date":"YYYY-MM-DD","dayOfWeek":"Terça","format":"Reel","type":"Pessoal/emocional","theme":"tema específico","hook":"gancho dos primeiros 3s","cta":"uma ação só"}]}`,
+
+  pac: `Você é Ana, criadora de conteúdo para @pac.tributaria — escritório contábil especializado em oficinas mecânicas e autopeças. Público: donos de oficinas, empresários do setor automotivo.
+
+Cadência semanal OBRIGATÓRIA:
+- Terça: Reel — Bastidor/case (história de cliente, resultado real)
+- Quarta: Carrossel — Dica prática (imposto, gestão, fluxo de caixa)
+- Quinta: Reel — Ferramenta/sistema (como a PAC resolve um problema)
+- Sexta: Reel — Polêmico (erro comum que oficinas cometem, dado alarmante)
+- Sábado: Imagem/quote — Leve
+
+RETORNE SOMENTE JSON VÁLIDO sem markdown:
+{"days":[{"date":"YYYY-MM-DD","dayOfWeek":"Terça","format":"Reel","type":"Bastidor/case","theme":"tema específico","hook":"gancho dos primeiros 3s","cta":"uma ação só"}]}`
+};
+
+app.post('/api/calendar/gerar', async (req, res) => {
+  const { profile, startDate } = req.body;
+  const start = startDate ? new Date(startDate) : new Date();
+  start.setHours(0,0,0,0);
+
+  const systemPrompt = CALENDAR_PROMPT[profile] || CALENDAR_PROMPT.franklim;
+  const endDate = new Date(start);
+  endDate.setDate(endDate.getDate() + 30);
+
+  const userMsg = `Gere o calendário editorial de ${start.toISOString().slice(0,10)} até ${endDate.toISOString().slice(0,10)} (30 dias). Inclua apenas dias de publicação (Terça a Sábado). Gere temas variados e específicos — sem repetir formatos similares em sequência.`;
+
+  try {
+    const response = await claude.messages.create({
+      model: 'claude-opus-4-5', max_tokens: 3000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMsg }]
+    });
+    const raw = response.content[0].text.trim().replace(/^```json|^```|```$/gm, '').trim();
+    const parsed = JSON.parse(raw);
+    const days = (parsed.days || []).map(d => ({
+      ...d,
+      id: crypto.randomUUID(),
+      profile: profile || 'franklim',
+      status: 'draft',
+      createdAt: new Date().toISOString()
+    }));
+    // Merge com calendário existente (evita duplicar datas)
+    const existing = readCalendar().filter(e => !days.find(d => d.date === e.date));
+    const merged = [...existing, ...days].sort((a,b) => a.date.localeCompare(b.date));
+    writeCalendar(merged);
+    res.json({ ok: true, days });
+  } catch (err) {
+    console.error('Calendar gerar erro:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/calendar', (req, res) => {
+  res.json({ days: readCalendar() });
+});
+
+app.put('/api/calendar/:id', (req, res) => {
+  const cal = readCalendar();
+  const idx = cal.findIndex(d => d.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Não encontrado.' });
+  cal[idx] = { ...cal[idx], ...req.body, id: req.params.id };
+  writeCalendar(cal);
+  res.json({ ok: true, day: cal[idx] });
+});
+
+app.delete('/api/calendar/:id', (req, res) => {
+  const cal = readCalendar().filter(d => d.id !== req.params.id);
+  writeCalendar(cal);
+  res.json({ ok: true });
+});
+
+/* ══════════════════════════════════════════
+   DMs AUTOMÁTICAS — INFRAESTRUTURA
+══════════════════════════════════════════ */
+const DM_CONFIG_PATH    = path.join(__dirname, 'dm-config.json');
+const DM_TEMPLATES_PATH = path.join(__dirname, 'dm-templates.json');
+
+function readDmConfig() {
+  try { return JSON.parse(fs.readFileSync(DM_CONFIG_PATH, 'utf8')); }
+  catch { return { enabled: false, igUsername: '', profile: 'franklim' }; }
+}
+function writeDmConfig(obj) { fs.writeFileSync(DM_CONFIG_PATH, JSON.stringify(obj, null, 2), 'utf8'); }
+
+function readDmTemplates() {
+  try { return JSON.parse(fs.readFileSync(DM_TEMPLATES_PATH, 'utf8')); }
+  catch { return []; }
+}
+function writeDmTemplates(arr) { fs.writeFileSync(DM_TEMPLATES_PATH, JSON.stringify(arr, null, 2), 'utf8'); }
+
+// GET/POST config
+app.get('/api/instagram/dm-config', (req, res) => res.json(readDmConfig()));
+app.post('/api/instagram/dm-config', (req, res) => {
+  writeDmConfig({ ...readDmConfig(), ...req.body });
+  res.json({ ok: true });
+});
+
+// CRUD templates
+app.get('/api/instagram/dm-templates', (req, res) => res.json({ templates: readDmTemplates() }));
+app.post('/api/instagram/dm-templates', (req, res) => {
+  const { keyword, response, label } = req.body;
+  if (!keyword || !response) return res.status(400).json({ error: 'keyword e response obrigatórios.' });
+  const tpls = readDmTemplates();
+  const tpl = { id: crypto.randomUUID(), label: label || keyword, keyword: keyword.toUpperCase().trim(), response, enabled: true, hitCount: 0, createdAt: new Date().toISOString() };
+  tpls.push(tpl);
+  writeDmTemplates(tpls);
+  res.json({ ok: true, template: tpl });
+});
+app.put('/api/instagram/dm-templates/:id', (req, res) => {
+  const tpls = readDmTemplates();
+  const idx = tpls.findIndex(t => t.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Não encontrado.' });
+  tpls[idx] = { ...tpls[idx], ...req.body, id: req.params.id };
+  writeDmTemplates(tpls);
+  res.json({ ok: true });
+});
+app.delete('/api/instagram/dm-templates/:id', (req, res) => {
+  writeDmTemplates(readDmTemplates().filter(t => t.id !== req.params.id));
+  res.json({ ok: true });
+});
+
+// Webhook Instagram (para quando a Meta aprovar instagram_manage_messages)
+app.get('/webhook/instagram', (req, res) => {
+  const mode      = req.query['hub.mode'];
+  const token     = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+  const verifyToken = process.env.IG_WEBHOOK_VERIFY_TOKEN || 'centralia-webhook-2026';
+  if (mode === 'subscribe' && token === verifyToken) return res.send(challenge);
+  res.sendStatus(403);
+});
+
+app.post('/webhook/instagram', async (req, res) => {
+  res.sendStatus(200); // Responde imediatamente (requisito Meta)
+  const cfg  = readDmConfig();
+  if (!cfg.enabled) return;
+  const body = req.body;
+  if (body.object !== 'instagram') return;
+
+  for (const entry of (body.entry || [])) {
+    for (const event of (entry.messaging || [])) {
+      if (!event.message?.text) continue;
+      const senderId = event.sender?.id;
+      const text     = event.message.text.trim().toUpperCase();
+      if (!senderId || senderId === cfg.igUserId) continue;
+
+      const tpls    = readDmTemplates().filter(t => t.enabled);
+      const matched = tpls.find(t => text.includes(t.keyword.toUpperCase()));
+      if (!matched) continue;
+
+      try {
+        const igCfg = ig.readConfig(cfg.profile);
+        await fetch(`https://graph.instagram.com/v22.0/me/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipient: { id: senderId }, message: { text: matched.response }, access_token: igCfg.accessToken })
+        });
+        // Incrementa hit count
+        const all = readDmTemplates();
+        const idx = all.findIndex(t => t.id === matched.id);
+        if (idx !== -1) { all[idx].hitCount = (all[idx].hitCount||0)+1; writeDmTemplates(all); }
+        console.log(`💌 DM enviado para ${senderId}: keyword "${matched.keyword}"`);
+      } catch(e) {
+        console.error('DM send erro:', e.message);
+      }
+    }
+  }
+});
+
+/* ══════════════════════════════════════════
    INSTAGRAM — ANALYTICS
 ══════════════════════════════════════════ */
 app.get('/api/instagram/analytics', async (req, res) => {

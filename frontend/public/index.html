@@ -470,6 +470,29 @@ footer{position:relative;z-index:2;text-align:center;padding:2.5rem;border-top:1
   </div>
 </div>
 
+<!-- ══ CALENDÁRIO EDITORIAL ══ -->
+<div class="module-section" style="margin-top:1rem">
+  <div class="divider module-divider"><div class="dline"></div><div class="dtext">// CALENDÁRIO EDITORIAL</div><div class="dline"></div></div>
+  <div class="module-card" onclick="openCalendar()" style="cursor:pointer">
+    <div class="module-inner">
+      <div class="module-icon-wrap">📅</div>
+      <div class="module-info">
+        <div class="module-badge">◉ ANA · PLANEJAMENTO · 30 DIAS</div>
+        <div class="module-title">Calendário <span class="accent">Editorial</span></div>
+        <div class="module-desc">Ana planeja 30 dias de conteúdo seguindo a cadência ideal — Reel pessoal, Carrossel técnico, Bastidor, Polêmico. Um clique gera o mês inteiro.</div>
+        <div class="module-steps">
+          <span class="module-step-badge ai">📅 30 dias</span>
+          <span class="module-step-badge ai">🎯 Tema + Gancho</span>
+          <span class="module-step-badge user">→ Pipeline</span>
+        </div>
+      </div>
+      <div class="module-cta">
+        <button class="module-btn" onclick="event.stopPropagation();openCalendar()">Ver calendário <span>→</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ ANALYTICS ══ -->
 <div class="module-section" style="margin-top:1rem">
   <div class="divider module-divider"><div class="dline"></div><div class="dtext">// PERFORMANCE</div><div class="dline"></div></div>
@@ -555,6 +578,29 @@ footer{position:relative;z-index:2;text-align:center;padding:2.5rem;border-top:1
     </div>
     <div id="ig-calendar-list">
       <p style="color:var(--text-muted);font-size:13px">Carregando agendamentos...</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DMs AUTOMÁTICAS ══ -->
+<div class="module-section" style="margin-top:1rem">
+  <div class="divider module-divider"><div class="dline"></div><div class="dtext">// DMs AUTOMÁTICAS</div><div class="dline"></div></div>
+  <div class="module-card" onclick="openDmManager()" style="cursor:pointer">
+    <div class="module-inner">
+      <div class="module-icon-wrap">💌</div>
+      <div class="module-info">
+        <div class="module-badge" id="dm-status-badge">◎ DMs · AGUARDANDO PERMISSÃO META</div>
+        <div class="module-title">DMs <span class="accent">Automáticas</span></div>
+        <div class="module-desc">Quando alguém enviar DM com "RITA", "REFORMA" ou qualquer palavra-chave, a Bia responde automaticamente. Configure os templates agora.</div>
+        <div class="module-steps">
+          <span class="module-step-badge user">Palavra-chave</span>
+          <span class="module-step-badge ai">Bia responde DM</span>
+          <span class="module-step-badge ai">Lead convertido</span>
+        </div>
+      </div>
+      <div class="module-cta">
+        <button class="module-btn" onclick="event.stopPropagation();openDmManager()">Configurar <span>→</span></button>
+      </div>
     </div>
   </div>
 </div>
@@ -2226,6 +2272,249 @@ setTimeout(loadHistory, 800);
 
 // Inicia verificação de autenticação
 checkAuth();
+
+/* ═══════════════════════════════════════════
+   CALENDÁRIO EDITORIAL
+═══════════════════════════════════════════ */
+function openCalendar(){
+  document.getElementById('calendar-overlay').classList.add('open');
+  loadCalendarDays();
+}
+function closeCalendar(){
+  document.getElementById('calendar-overlay').classList.remove('open');
+}
+
+async function gerarCalendario(){
+  const btn     = document.getElementById('cal-gerar-btn');
+  const loading = document.getElementById('calendar-loading');
+  const profile = document.getElementById('cal-profile-select').value;
+  btn.disabled  = true; btn.textContent = '✨ Gerando...';
+  loading.style.display = 'block';
+  document.getElementById('calendar-list').innerHTML = '';
+  try {
+    const res  = await fetch(`${API}/api/calendar/gerar`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ profile })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error);
+    renderCalendarDays(data.days);
+  } catch(e){
+    document.getElementById('calendar-list').innerHTML = `<p style="color:var(--red)">❌ ${e.message}</p>`;
+  } finally {
+    btn.disabled=false; btn.textContent='✨ Gerar mês';
+    loading.style.display='none';
+  }
+}
+
+async function loadCalendarDays(){
+  try {
+    const res  = await fetch(`${API}/api/calendar`);
+    const data = await res.json();
+    renderCalendarDays(data.days || []);
+  } catch(e) {}
+}
+
+function calFormatStyle(format){
+  if(!format) return {bg:'var(--bg-card)',color:'var(--text-muted)'};
+  const f = format.toLowerCase();
+  if(f.includes('reel'))     return {bg:'#1a2a1a',color:'#b8ff57'};
+  if(f.includes('carrossel')||f.includes('carousel')) return {bg:'#1a1a2a',color:'#7bb3ff'};
+  return {bg:'#2a1a1a',color:'#ffaa55'};
+}
+
+function renderCalendarDays(days){
+  const el = document.getElementById('calendar-list');
+  if(!days || !days.length){
+    el.innerHTML = `<div style="text-align:center;padding:3rem;color:var(--text-muted)">
+      <div style="font-size:36px;margin-bottom:12px">📅</div>
+      <div>Nenhum conteúdo planejado ainda.</div>
+      <div style="font-size:12px;margin-top:8px">Clique em "✨ Gerar mês" para Ana planejar 30 dias.</div>
+    </div>`;
+    return;
+  }
+
+  // Agrupa por semana
+  const today = new Date().toISOString().slice(0,10);
+  const past  = days.filter(d => d.date < today);
+  const coming = days.filter(d => d.date >= today);
+
+  let html = '';
+  if(coming.length){
+    html += `<div style="font-size:10px;color:var(--text-muted);letter-spacing:2px;font-weight:700;margin-bottom:12px">PRÓXIMAS PUBLICAÇÕES</div>`;
+    html += coming.map(d => calDayCard(d)).join('');
+  }
+  if(past.length){
+    html += `<div style="font-size:10px;color:var(--text-muted);letter-spacing:2px;font-weight:700;margin:20px 0 12px">PASSADAS</div>`;
+    html += past.reverse().map(d => calDayCard(d, true)).join('');
+  }
+  el.innerHTML = html;
+}
+
+function calDayCard(d, faded=false){
+  const fmt   = calFormatStyle(d.format);
+  const dt    = new Date(d.date+'T12:00:00');
+  const isPub = d.status === 'published';
+  return `<div style="background:var(--bg-card);border:1px solid ${isPub?'#00C89640':'var(--border)'};border-radius:12px;padding:14px 16px;margin-bottom:8px;opacity:${faded&&!isPub?.55:1};transition:.2s">
+    <div style="display:flex;align-items:flex-start;gap:12px">
+      <div style="flex-shrink:0;width:52px;text-align:center;background:var(--bg-modal);border-radius:8px;padding:6px 4px">
+        <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase">${dt.toLocaleDateString('pt-BR',{weekday:'short'})}</div>
+        <div style="font-size:18px;font-weight:700;color:var(--text)">${dt.getDate()}</div>
+        <div style="font-size:9px;color:var(--text-muted)">${dt.toLocaleDateString('pt-BR',{month:'short'})}</div>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:${fmt.bg};color:${fmt.color}">${d.format||'Post'}</span>
+          <span style="font-size:10px;color:var(--text-muted)">${d.type||''}</span>
+          ${isPub?`<span style="font-size:10px;color:#00C896;margin-left:auto">✓ Publicado</span>`:''}
+        </div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">${d.theme}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px">🎯 ${d.hook||''}</div>
+        <div style="font-size:11px;color:var(--text-sub)">CTA: ${d.cta||''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        <button onclick="calUsarNoPipeline('${d.id}')" title="Criar pipeline com este tema"
+          style="font-size:10px;padding:4px 10px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:6px;color:var(--green);cursor:pointer;white-space:nowrap">
+          🚀 Pipeline
+        </button>
+        <button onclick="calUsarNaAna('${d.id}')" title="Gerar roteiro com Ana"
+          style="font-size:10px;padding:4px 10px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-sub);cursor:pointer;white-space:nowrap">
+          🎬 Ana
+        </button>
+        ${!isPub?`<button onclick="calMarcarPublicado('${d.id}')"
+          style="font-size:10px;padding:4px 10px;background:none;border:1px solid #00C89640;border-radius:6px;color:#00C896;cursor:pointer;white-space:nowrap">
+          ✓ Publicado
+        </button>`:`<button onclick="calExcluir('${d.id}')"
+          style="font-size:10px;padding:4px 10px;background:none;border:1px solid #ef444430;border-radius:6px;color:#ef4444;cursor:pointer">
+          🗑
+        </button>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+let _calDays = [];
+async function _getCalDays(){
+  if(!_calDays.length){ const r=await fetch(`${API}/api/calendar`); const d=await r.json(); _calDays=d.days||[]; }
+  return _calDays;
+}
+
+function calUsarNoPipeline(id){
+  fetch(`${API}/api/calendar`).then(r=>r.json()).then(d=>{
+    const day = (d.days||[]).find(x=>x.id===id);
+    if(!day) return;
+    closeCalendar();
+    // Abre pipeline com tema preenchido
+    pl = { step:1, loading:false, profile: day.profile||'franklim', pauta:'', angulos:'', selectedAngulo:'', anguloIdx:-1, copy:'', copyFeedback:'', slidesHtml:'', slidesEngine:'', daviError:'', review:'' };
+    document.getElementById('pl-overlay').classList.add('open');
+    renderPipeline();
+    // Aguarda render e preenche a textarea
+    setTimeout(()=>{
+      const inp = document.getElementById('pl-input');
+      if(inp){ inp.value = day.theme + (day.hook ? '\n\nGancho: ' + day.hook : ''); }
+    }, 150);
+  });
+}
+
+function calUsarNaAna(id){
+  fetch(`${API}/api/calendar`).then(r=>r.json()).then(d=>{
+    const day = (d.days||[]).find(x=>x.id===id);
+    if(!day) return;
+    closeCalendar();
+    // Abre Ana com tema preenchido
+    openAna();
+    anaSelectProfile(day.profile||'franklim');
+    setTimeout(()=>{
+      const t = document.getElementById('ana-tema');
+      if(t) t.value = day.theme;
+      const e = document.getElementById('ana-extras');
+      if(e) e.value = day.hook ? 'Gancho sugerido: ' + day.hook : '';
+    }, 150);
+  });
+}
+
+async function calMarcarPublicado(id){
+  await fetch(`${API}/api/calendar/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status:'published' }) });
+  _calDays = [];
+  loadCalendarDays();
+}
+
+async function calExcluir(id){
+  if(!confirm('Remover do calendário?')) return;
+  await fetch(`${API}/api/calendar/${id}`, { method:'DELETE' });
+  _calDays = [];
+  loadCalendarDays();
+}
+
+/* ═══════════════════════════════════════════
+   DMs AUTOMÁTICAS
+═══════════════════════════════════════════ */
+async function openDmManager(){
+  document.getElementById('dm-overlay').classList.add('open');
+  loadDmTemplates();
+}
+function closeDmManager(){
+  document.getElementById('dm-overlay').classList.remove('open');
+}
+
+async function loadDmTemplates(){
+  try {
+    const res  = await fetch(`${API}/api/instagram/dm-templates`);
+    const data = await res.json();
+    renderDmTemplates(data.templates||[]);
+    document.getElementById('dm-modal-status').textContent =
+      (data.templates||[]).length + ' template(s) configurado(s)';
+  } catch(e){}
+}
+
+function renderDmTemplates(tpls){
+  const el = document.getElementById('dm-templates-list');
+  if(!tpls.length){ el.innerHTML='<p style="font-size:12px;color:var(--text-muted)">Nenhum template ainda.</p>'; return; }
+  el.innerHTML = tpls.map(t=>`
+    <div style="background:var(--bg-card);border:1px solid ${t.enabled?'var(--border)':'var(--border2)'};border-radius:10px;padding:12px 14px;margin-bottom:8px;opacity:${t.enabled?1:.6}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:12px;font-weight:700;color:var(--green);background:var(--green-dim);border:1px solid var(--green-border);border-radius:4px;padding:2px 8px">${t.keyword}</span>
+        <span style="font-size:11px;color:var(--text-muted)">${t.label}</span>
+        <span style="font-size:10px;color:var(--text-muted);margin-left:auto">${t.hitCount||0} disparos</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-sub);margin-bottom:8px;line-height:1.5">"${(t.response||'').slice(0,100)}${t.response?.length>100?'…':''}"</div>
+      <div style="display:flex;gap:6px">
+        <button onclick="toggleDmTemplate('${t.id}',${!t.enabled})" style="font-size:10px;padding:3px 8px;background:none;border:1px solid var(--border);border-radius:5px;color:var(--text-sub);cursor:pointer">${t.enabled?'Pausar':'Ativar'}</button>
+        <button onclick="deleteDmTemplate('${t.id}')" style="font-size:10px;padding:3px 8px;background:none;border:1px solid #ef444440;border-radius:5px;color:#ef4444;cursor:pointer">Excluir</button>
+      </div>
+    </div>`).join('');
+}
+
+async function addDmTemplate(){
+  const errEl = document.getElementById('dm-add-error');
+  errEl.style.display='none';
+  const keyword  = document.getElementById('dm-keyword')?.value.trim().toUpperCase();
+  const response = document.getElementById('dm-response')?.value.trim();
+  const label    = document.getElementById('dm-label')?.value.trim();
+  if(!keyword){ errEl.textContent='Informe a palavra-chave.'; errEl.style.display='block'; return; }
+  if(!response){ errEl.textContent='Escreva a mensagem da DM.'; errEl.style.display='block'; return; }
+  try {
+    const res = await fetch(`${API}/api/instagram/dm-templates`,{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ keyword, response, label: label||keyword })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error);
+    ['dm-keyword','dm-response','dm-label'].forEach(id=>{ const e=document.getElementById(id); if(e)e.value=''; });
+    loadDmTemplates();
+  } catch(e){ errEl.textContent=e.message; errEl.style.display='block'; }
+}
+
+async function toggleDmTemplate(id, enabled){
+  await fetch(`${API}/api/instagram/dm-templates/${id}`,{ method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({enabled}) });
+  loadDmTemplates();
+}
+
+async function deleteDmTemplate(id){
+  if(!confirm('Excluir este template?')) return;
+  await fetch(`${API}/api/instagram/dm-templates/${id}`,{ method:'DELETE' });
+  loadDmTemplates();
+}
 </script>
 
 <!-- ══ INSTAGRAM SETTINGS OVERLAY ══ -->
@@ -2315,6 +2604,103 @@ checkAuth();
     <div class="ig-btn-row">
       <button class="pl-btn pl-btn-secondary" onclick="closeIgSchedule()">Cancelar</button>
       <button class="pl-btn pl-btn-primary" onclick="confirmSchedule()">🗓️ Confirmar agendamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CALENDÁRIO MODAL ══ -->
+<div class="ig-overlay" id="calendar-overlay">
+  <div class="ig-modal" style="max-width:860px;max-height:92vh;display:flex;flex-direction:column">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border2);flex-shrink:0">
+      <span style="font-size:22px">📅</span>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:16px;color:#fff">Calendário Editorial</div>
+        <div style="font-size:11px;color:var(--text-muted)">30 dias planejados por Ana</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="cal-profile-select" class="ig-input" style="width:auto;padding:6px 10px;font-size:12px">
+          <option value="franklim">📊 Franklim</option>
+          <option value="pac">🔧 PAC</option>
+        </select>
+        <button id="cal-gerar-btn" class="pl-btn pl-btn-primary" onclick="gerarCalendario()" style="font-size:12px;padding:8px 16px">✨ Gerar mês</button>
+        <button onclick="closeCalendar()" style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:4px 8px">✕</button>
+      </div>
+    </div>
+
+    <!-- Legenda -->
+    <div style="display:flex;gap:12px;padding:10px 20px;border-bottom:1px solid var(--border2);flex-shrink:0;flex-wrap:wrap">
+      <span style="font-size:10px;color:var(--text-muted)">Formatos:</span>
+      <span style="font-size:10px;background:#1a2a1a;color:#b8ff57;border-radius:4px;padding:2px 7px">Reel</span>
+      <span style="font-size:10px;background:#1a1a2a;color:#7bb3ff;border-radius:4px;padding:2px 7px">Carrossel</span>
+      <span style="font-size:10px;background:#2a1a1a;color:#ffaa55;border-radius:4px;padding:2px 7px">Imagem</span>
+      <span style="margin-left:16px;font-size:10px;color:var(--text-muted)">Status:</span>
+      <span style="font-size:10px;background:var(--bg-card);color:var(--text-muted);border-radius:4px;padding:2px 7px;border:1px solid var(--border)">Rascunho</span>
+      <span style="font-size:10px;background:#0d1e0d;color:#00C896;border-radius:4px;padding:2px 7px;border:1px solid #00C89640">Publicado</span>
+    </div>
+
+    <!-- Lista de dias -->
+    <div id="calendar-body" style="overflow-y:auto;flex:1;padding:1.25rem 1.5rem">
+      <div id="calendar-loading" style="display:none;text-align:center;padding:3rem;color:var(--text-muted)">
+        <div style="font-size:28px;margin-bottom:12px">✨</div>
+        Ana está planejando seu mês...
+      </div>
+      <div id="calendar-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DMs MODAL ══ -->
+<div class="ig-overlay" id="dm-overlay">
+  <div class="ig-modal" style="max-width:580px;max-height:90vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border2);flex-shrink:0">
+      <span style="font-size:22px">💌</span>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:16px;color:#fff">DMs Automáticas</div>
+        <div style="font-size:11px;color:var(--text-muted)" id="dm-modal-status">Carregando...</div>
+      </div>
+      <button onclick="closeDmManager()" style="background:none;border:none;color:var(--text-muted);font-size:18px;cursor:pointer;padding:4px 8px">✕</button>
+    </div>
+
+    <!-- Aviso permissão -->
+    <div style="background:#1a0e00;border-bottom:1px solid #f59e0b40;padding:12px 20px;flex-shrink:0">
+      <div style="font-size:12px;color:#f59e0b;font-weight:600;margin-bottom:4px">⏳ Permissão Meta pendente</div>
+      <div style="font-size:11px;color:#92400e;line-height:1.5">Configure os templates agora. Quando a Meta aprovar <code style="background:#2a1a00;padding:1px 5px;border-radius:3px">instagram_manage_messages</code>, as DMs funcionarão automaticamente com os templates cadastrados aqui.</div>
+    </div>
+
+    <div style="overflow-y:auto;flex:1">
+      <!-- Fluxo explicativo -->
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border2)">
+        <div style="font-size:10px;color:var(--text-muted);letter-spacing:2px;font-weight:700;margin-bottom:10px">COMO FUNCIONA</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-sub);flex-wrap:wrap">
+          <span style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:4px 10px">1. Seguidores comentam "RITA"</span>
+          <span style="color:var(--text-muted)">→</span>
+          <span style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:4px 10px">2. Bia responde o comentário</span>
+          <span style="color:var(--text-muted)">→</span>
+          <span style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:4px 10px">3. Pessoa manda DM com "RITA"</span>
+          <span style="color:var(--text-muted)">→</span>
+          <span style="background:#0d1e0d;border:1px solid #00C89640;border-radius:6px;padding:4px 10px;color:#00C896">4. Bia responde DM automaticamente ✓</span>
+        </div>
+      </div>
+
+      <!-- Novo template -->
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border2)">
+        <div style="font-size:10px;color:var(--text-muted);letter-spacing:2px;font-weight:700;margin-bottom:12px">+ NOVO TEMPLATE DE DM</div>
+        <label class="ig-label">Palavra-chave que dispara a DM</label>
+        <input id="dm-keyword" class="ig-input" placeholder="Ex: RITA, REFORMA, MÉTODO, FAMÍLIA" style="margin-bottom:10px;text-transform:uppercase">
+        <label class="ig-label">Mensagem que a Bia envia na DM</label>
+        <textarea id="dm-response" class="ig-input" rows="4" placeholder="Ex: Oi! Vi que você tem interesse no Método R.i.TA. Aqui está o link para entrar na Família TributárIA: [link]" style="resize:vertical;margin-bottom:10px"></textarea>
+        <label class="ig-label">Nome do template (para identificar)</label>
+        <input id="dm-label" class="ig-input" placeholder="Ex: Lead RITA" style="margin-bottom:12px">
+        <button class="pl-btn pl-btn-primary" onclick="addDmTemplate()" style="width:100%">💌 Adicionar template</button>
+        <div id="dm-add-error" style="display:none;font-size:11px;color:var(--red);margin-top:6px"></div>
+      </div>
+
+      <!-- Lista de templates -->
+      <div style="padding:16px 20px">
+        <div style="font-size:10px;color:var(--text-muted);letter-spacing:2px;font-weight:700;margin-bottom:10px">TEMPLATES CONFIGURADOS</div>
+        <div id="dm-templates-list"><p style="font-size:12px;color:var(--text-muted)">Nenhum template ainda.</p></div>
+      </div>
     </div>
   </div>
 </div>
