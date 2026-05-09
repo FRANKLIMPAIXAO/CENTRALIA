@@ -87,7 +87,7 @@ body{background:#0a0a0a;color:#e8e8e8;font-family:'Courier New',monospace;font-s
   </div>
 </div>
 <script>
-const AUTH_KEY='centralia_token',token=localStorage.getItem(AUTH_KEY)||'';
+const AUTH_KEY='cia_token',token=localStorage.getItem(AUTH_KEY)||'';
 let rCI=null,aCI=null,gCI=null;
 function fmt(n){if(n>=1000)return(n/1000).toFixed(1).replace('.0','')+'K';return String(Math.round(n));}
 function typeLabel(t){return{REELS:'REEL',CAROUSEL_ALBUM:'CARROSSEL',IMAGE:'IMAGEM',VIDEO:'VÍDEO',FEED:'FEED'}[t]||t||'POST';}
