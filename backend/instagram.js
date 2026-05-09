@@ -21,12 +21,24 @@ function getGraphBase(accessToken) {
 /* ══════════════════════════════════════════
    CONFIG HELPERS
 ══════════════════════════════════════════ */
-function readConfig() {
-  // 1. Tenta ler do arquivo JSON
+// readConfig(profile) — suporta 'franklim' (padrão) e 'pac' (conta separada)
+function readConfig(profile) {
   let file = {};
   try { file = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')); } catch {}
 
-  // 2. Fallback para variáveis de ambiente (Railway / produção)
+  if (profile === 'pac') {
+    // Conta PAC usa variáveis PAC_IG_* — nunca mistura com Franklim
+    return {
+      accessToken   : process.env.PAC_IG_ACCESS_TOKEN || '',
+      igUserId      : process.env.PAC_IG_USER_ID      || '',
+      appId         : file.appId    || process.env.IG_APP_ID     || '',
+      appSecret     : file.appSecret|| process.env.IG_APP_SECRET || '',
+      imgbbApiKey   : file.imgbbApiKey || process.env.IMGBB_API_KEY || '',
+      tokenExpiresAt: 0
+    };
+  }
+
+  // Perfil padrão: Franklim
   return {
     accessToken   : file.accessToken    || process.env.IG_ACCESS_TOKEN  || '',
     igUserId      : file.igUserId       || process.env.IG_USER_ID        || '',
@@ -310,8 +322,17 @@ const REPLIED_PATH       = path.join(__dirname, 'replied-comments.json');
 const AR_LOG_PATH        = path.join(__dirname, 'autoresponder-log.json');
 
 function readAutoResponderConfig() {
-  try { return JSON.parse(fs.readFileSync(AUTORESPONDER_PATH, 'utf8')); }
-  catch { return { enabled: false, profile: 'franklim', intervalMinutes: 5, customInstructions: '', igUsername: '' }; }
+  let file = {};
+  try { file = JSON.parse(fs.readFileSync(AUTORESPONDER_PATH, 'utf8')); } catch {}
+  // Env vars como fallback — permite persistência no Railway sem arquivo
+  return {
+    enabled           : file.enabled            ?? (process.env.AR_ENABLED === 'true'),
+    profile           : file.profile            || process.env.AR_PROFILE       || 'franklim',
+    intervalMinutes   : file.intervalMinutes    || parseInt(process.env.AR_INTERVAL || '5'),
+    customInstructions: file.customInstructions || '',
+    igUsername        : file.igUsername         || process.env.AR_USERNAME       || '',
+    respondToAll      : file.respondToAll       ?? (process.env.AR_RESPOND_ALL !== 'false')
+  };
 }
 function writeAutoResponderConfig(obj) {
   fs.writeFileSync(AUTORESPONDER_PATH, JSON.stringify(obj, null, 2), 'utf8');
@@ -345,11 +366,19 @@ async function fetchRecentPosts(igUserId, accessToken) {
 
 async function fetchComments(mediaId, accessToken) {
   const base = getGraphBase(accessToken);
-  const qs   = new URLSearchParams({ fields: 'id,text,username,timestamp', access_token: accessToken });
+  // Inclui replies para verificar se já respondemos via API (não só pelo arquivo local)
+  const qs   = new URLSearchParams({ fields: 'id,text,username,timestamp,replies{id,username}', access_token: accessToken });
   const res  = await fetch(`${base}/${mediaId}/comments?${qs}`);
   const data = await res.json();
   const err  = igError(data); if (err) throw err;
   return data;
+}
+
+// Verifica se a conta já respondeu este comentário via API (proteção contra restart)
+function alreadyRepliedViaApi(comment, igUsername) {
+  if (!igUsername) return false;
+  const replies = comment.replies?.data || [];
+  return replies.some(r => r.username === igUsername);
 }
 
 async function replyToComment(commentId, message, accessToken) {
@@ -425,15 +454,17 @@ function matchTrigger(commentText, triggers) {
 let autoResponderJob = null;
 
 async function runAutoResponder(claudeClient) {
-  const cfg   = readConfig();
-  const arCfg = readAutoResponderConfig();
+  const arCfg  = readAutoResponderConfig();
   if (!arCfg.enabled) return;
+
+  // Usa a conta correta baseada no perfil configurado
+  const cfg = readConfig(arCfg.profile);
   if (!cfg.accessToken || !cfg.igUserId) {
-    console.log('⚠️  Auto-responder: Instagram não configurado.');
+    console.log(`⚠️  Bia: Instagram não configurado para perfil "${arCfg.profile}".`);
     return;
   }
 
-  console.log('💬 Auto-responder Bia: varrendo comentários...');
+  console.log(`💬 Bia [${arCfg.profile}]: varrendo comentários...`);
   try {
     const replied  = readReplied();
     const triggers = readTriggers().filter(t => t.enabled);
@@ -448,7 +479,14 @@ async function runAutoResponder(claudeClient) {
       catch (e) { console.error(`  ⚠️ Post ${post.id}:`, e.message); continue; }
 
       for (const comment of (comments.data || [])) {
+        // DUPLA PROTEÇÃO: arquivo local + verificação via API
+        // Isso evita respostas duplas mesmo após restart do Railway
         if (replied.has(comment.id)) continue;
+        if (alreadyRepliedViaApi(comment, arCfg.igUsername)) {
+          replied.add(comment.id); // sincroniza o cache local
+          writeReplied(replied);
+          continue;
+        }
 
         // Pula comentários do próprio dono da conta
         if (arCfg.igUsername && comment.username === arCfg.igUsername) {
@@ -460,7 +498,7 @@ async function runAutoResponder(claudeClient) {
         const trigger  = matchTrigger(comment.text, triggers);
         const hasTrigs = triggers.length > 0;
 
-        // Se há gatilhos mas nenhum bateu E respondToAll = false → ignora
+        // Se há gatilhos mas nenhum bateu E respondToAll = false → ignora (sem marcar replied)
         if (hasTrigs && !trigger && !arCfg.respondToAll) {
           continue;
         }
@@ -474,7 +512,6 @@ async function runAutoResponder(claudeClient) {
             if (trigger.responseType === 'fixed') {
               reply = trigger.fixedResponse;
             } else {
-              // IA com instrução customizada do gatilho
               reply = await generateCommentReply(
                 comment.text,
                 post.caption || '',
@@ -502,6 +539,8 @@ async function runAutoResponder(claudeClient) {
           }
 
           await replyToComment(comment.id, reply, cfg.accessToken);
+
+          // Só marca como replied APÓS sucesso
           replied.add(comment.id);
           writeReplied(replied);
           total++;
@@ -512,20 +551,29 @@ async function runAutoResponder(claudeClient) {
             comment     : comment.text.slice(0, 120),
             reply,
             postId      : post.id,
+            profile     : arCfg.profile,
             triggerLabel
           });
 
           console.log(`  ✅ [${triggerLabel}] @${comment.username}: "${comment.text.slice(0, 35)}..." → "${reply}"`);
-          await new Promise(r => setTimeout(r, 3000)); // anti-spam
+          await new Promise(r => setTimeout(r, 3000)); // anti-spam entre respostas
+
         } catch (e) {
-          console.error(`  ❌ Falha ao responder ${comment.id}:`, e.message);
-          replied.add(comment.id);
-          writeReplied(replied);
+          const isPermanent = e.code === 'TOKEN_EXPIRED' || (e.message || '').includes('permission');
+          if (isPermanent) {
+            // Erro permanente → marca replied para não tentar mais
+            console.error(`  ❌ Erro permanente ${comment.id} (${e.message}) — ignorando.`);
+            replied.add(comment.id);
+            writeReplied(replied);
+          } else {
+            // Rate limit ou erro temporário → NÃO marca replied, tenta na próxima varredura
+            console.error(`  ⚠️ Erro temporário ${comment.id} (${e.message}) — retentará.`);
+          }
         }
       }
     }
 
-    if (total > 0) console.log(`💬 Bia: ${total} comentário(s) respondido(s).`);
+    if (total > 0) console.log(`💬 Bia [${arCfg.profile}]: ${total} comentário(s) respondido(s).`);
   } catch (e) {
     console.error('❌ Auto-responder erro:', e.message);
   }
