@@ -541,15 +541,6 @@ async function runAutoResponder(claudeClient) {
         const jaRespondido = await alreadyRepliedViaApi(comment.id, arCfg.igUsername, cfg.accessToken);
         if (jaRespondido) { replied.add(comment.id); writeReplied(replied); continue; }
 
-        // 4. Só agora verifica via API se já respondemos
-        const jaRespondido = await alreadyRepliedViaApi(comment.id, arCfg.igUsername, cfg.accessToken);
-        console.log(`       → alreadyReplied via API: ${jaRespondido}`);
-        if (jaRespondido) {
-          replied.add(comment.id);
-          writeReplied(replied);
-          continue;
-        }
-
         try {
           let reply;
           let triggerLabel = 'livre';
