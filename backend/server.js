@@ -23,6 +23,7 @@ const crypto   = require('crypto');
 const Anthropic = require('@anthropic-ai/sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const ig       = require('./instagram');
+const { fetchFullAnalytics } = require('./ig-analytics');
 const { parseFiscalXML, detectDocType, formatCurrency, formatPercent, crtLabel } = require('./modules/xml-parser');
 
 const app      = express();
@@ -1008,6 +1009,22 @@ app.post('/api/ana/gerar', async (req, res) => {
     res.json({ ok: true, gancho1, gancho2, gancho3, roteiro, legenda, raw });
   } catch (err) {
     console.error('Ana erro:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ══════════════════════════════════════════
+   INSTAGRAM — ANALYTICS
+══════════════════════════════════════════ */
+app.get('/api/instagram/analytics', async (req, res) => {
+  try {
+    const cfg = ig.readConfig();
+    if (!cfg.accessToken || !cfg.igUserId)
+      return res.status(400).json({ error: 'Instagram não configurado. Configure o token em ⚙️ Configurar.' });
+    const data = await fetchFullAnalytics(cfg.igUserId, cfg.accessToken, claude);
+    res.json({ ok: true, ...data });
+  } catch (err) {
+    console.error('Analytics erro:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
