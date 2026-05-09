@@ -357,8 +357,8 @@ function appendArLog(entry) {
 
 async function fetchRecentPosts(igUserId, accessToken) {
   const base = getGraphBase(accessToken);
-  // limit=25 para cobrir posts mais antigos que podem ter comentários novos
-  const qs   = new URLSearchParams({ fields: 'id,caption,timestamp,comments_count', limit: '25', access_token: accessToken });
+  // limit=50 para cobrir posts mais antigos (~1 mês com cadência alta)
+  const qs   = new URLSearchParams({ fields: 'id,caption,timestamp,comments_count', limit: '50', access_token: accessToken });
   const res  = await fetch(`${base}/${igUserId}/media?${qs}`);
   const data = await res.json();
   const err  = igError(data); if (err) throw err;
