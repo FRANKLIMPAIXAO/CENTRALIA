@@ -486,41 +486,55 @@ async function runAutoResponder(claudeClient) {
     return;
   }
 
-  console.log(`💬 Bia [${arCfg.profile}]: varrendo comentários...`);
+  console.log(`💬 Bia [${arCfg.profile}]: varrendo | respondToAll=${arCfg.respondToAll} | username=${arCfg.igUsername}`);
   try {
     const replied  = readReplied();
     const triggers = readTriggers().filter(t => t.enabled);
+    console.log(`   gatilhos ativos: ${triggers.length} | ${triggers.map(t=>t.keywords[0]).join(', ')}`);
     const posts    = await fetchRecentPosts(cfg.igUserId, cfg.accessToken);
+    const postList = posts.data || [];
+    console.log(`   posts encontrados: ${postList.length}`);
     let   total    = 0;
 
-    for (const post of (posts.data || [])) {
+    for (const post of postList) {
+      console.log(`   post ${post.id}: comments_count=${post.comments_count}`);
       if (!post.comments_count || post.comments_count === 0) continue;
 
       let comments;
       try { comments = await fetchComments(post.id, cfg.accessToken); }
       catch (e) { console.error(`  ⚠️ Post ${post.id}:`, e.message); continue; }
 
-      for (const comment of (comments.data || [])) {
+      const commentList = comments.data || [];
+      console.log(`     → ${commentList.length} comentário(s) no post`);
+
+      for (const comment of commentList) {
+        const shortText = comment.text?.slice(0,30) || '';
+        console.log(`     comentário @${comment.username}: "${shortText}" [id:${comment.id.slice(-6)}]`);
+
         // 1. Cache local — rápido, evita reprocessar
-        if (replied.has(comment.id)) continue;
+        if (replied.has(comment.id)) { console.log(`       → SKIP (cache local)`); continue; }
 
         // 2. Pula comentários do próprio dono da conta
         if (arCfg.igUsername && comment.username === arCfg.igUsername) {
           replied.add(comment.id);
+          console.log(`       → SKIP (própria conta)`);
           continue;
         }
 
         // 3. Checa gatilho ANTES da chamada API (evita rate limit)
         const trigger  = matchTrigger(comment.text, triggers);
         const hasTrigs = triggers.length > 0;
+        console.log(`       → gatilho: ${trigger ? trigger.label : 'nenhum'} | hasTrigs=${hasTrigs} | respondToAll=${arCfg.respondToAll}`);
 
         // Se não bate nenhum gatilho e respondToAll = false → ignora sem chamar API
         if (hasTrigs && !trigger && !arCfg.respondToAll) {
+          console.log(`       → SKIP (sem gatilho e respondToAll=false)`);
           continue;
         }
 
-        // 4. Só agora verifica via API se já respondemos (chamada cara — só para quem vai responder)
+        // 4. Só agora verifica via API se já respondemos
         const jaRespondido = await alreadyRepliedViaApi(comment.id, arCfg.igUsername, cfg.accessToken);
+        console.log(`       → alreadyReplied via API: ${jaRespondido}`);
         if (jaRespondido) {
           replied.add(comment.id);
           writeReplied(replied);
