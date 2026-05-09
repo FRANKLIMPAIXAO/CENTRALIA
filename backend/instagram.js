@@ -589,7 +589,7 @@ async function runAutoResponder(claudeClient) {
 
           appendArLog({
             at          : new Date().toISOString(),
-            username    : comment.username,
+            username    : commentUsername,
             comment     : comment.text.slice(0, 120),
             reply,
             postId      : post.id,
@@ -597,7 +597,7 @@ async function runAutoResponder(claudeClient) {
             triggerLabel
           });
 
-          console.log(`  ✅ [${triggerLabel}] @${comment.username}: "${comment.text.slice(0, 35)}..." → "${reply}"`);
+          console.log(`  ✅ [${triggerLabel}] @${commentUsername}: "${comment.text.slice(0, 35)}..." → "${reply}"`);
           await new Promise(r => setTimeout(r, 3000)); // anti-spam entre respostas
 
         } catch (e) {
