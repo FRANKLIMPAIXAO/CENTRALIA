@@ -331,7 +331,7 @@ function readAutoResponderConfig() {
     intervalMinutes   : file.intervalMinutes    || parseInt(process.env.AR_INTERVAL || '5'),
     customInstructions: file.customInstructions || '',
     igUsername        : file.igUsername         || process.env.AR_USERNAME       || '',
-    respondToAll      : file.respondToAll       ?? (process.env.AR_RESPOND_ALL !== 'false')
+    respondToAll      : file.respondToAll       ?? (process.env.AR_RESPOND_ALL === 'true')
   };
 }
 function writeAutoResponderConfig(obj) {
@@ -366,19 +366,27 @@ async function fetchRecentPosts(igUserId, accessToken) {
 
 async function fetchComments(mediaId, accessToken) {
   const base = getGraphBase(accessToken);
-  // Inclui replies para verificar se já respondemos via API (não só pelo arquivo local)
-  const qs   = new URLSearchParams({ fields: 'id,text,username,timestamp,replies{id,username}', access_token: accessToken });
+  const qs   = new URLSearchParams({ fields: 'id,text,username,timestamp', access_token: accessToken });
   const res  = await fetch(`${base}/${mediaId}/comments?${qs}`);
   const data = await res.json();
   const err  = igError(data); if (err) throw err;
   return data;
 }
 
-// Verifica se a conta já respondeu este comentário via API (proteção contra restart)
-function alreadyRepliedViaApi(comment, igUsername) {
+// Verifica via API se já existe reply nosso neste comentário
+// Chamada direta a /{comment-id}/replies — mais confiável que campo embutido
+async function alreadyRepliedViaApi(commentId, igUsername, accessToken) {
   if (!igUsername) return false;
-  const replies = comment.replies?.data || [];
-  return replies.some(r => r.username === igUsername);
+  try {
+    const base = getGraphBase(accessToken);
+    const qs   = new URLSearchParams({ fields: 'id,username', access_token: accessToken });
+    const res  = await fetch(`${base}/${commentId}/replies?${qs}`);
+    const data = await res.json();
+    if (data.error) return false;
+    return (data.data || []).some(r => r.username === igUsername);
+  } catch {
+    return false;
+  }
 }
 
 async function replyToComment(commentId, message, accessToken) {
@@ -435,9 +443,23 @@ async function generateCommentReply(commentText, postCaption, profile, customIns
 /* ── Gatilhos por palavra-chave ── */
 const TRIGGERS_PATH = path.join(__dirname, 'triggers.json');
 
+// Gatilhos padrão — usados quando triggers.json não existe (Railway restart)
+const DEFAULT_TRIGGERS = [
+  { id:'default-1', label:'RITA / Reforma / IBS / CBS', keywords:['reforma','IBS','CBS','split','RITA','método','cenário','tributária'], responseType:'fixed', fixedResponse:'Manda um direct com REFORMA que te mando o material certo pra começar 💡', enabled:true, hitCount:0 },
+  { id:'default-2', label:'IA / Claude / GPT',          keywords:['IA','inteligência artificial','Claude','GPT','automatizar','automação'], responseType:'fixed', fixedResponse:'Me chama no direct que te mostro como aplico o Claude no dia a dia do escritório 💡', enabled:true, hitCount:0 },
+  { id:'default-3', label:'Mentoria / Família / Quero', keywords:['mentoria','família','quero','interesse','entrar','como funciona','vagas'], responseType:'fixed', fixedResponse:'Manda um direct agora que te falo tudo sobre a Família TributárIA 🚀', enabled:true, hitCount:0 },
+  { id:'default-4', label:'Preço / Honorário',          keywords:['preço','valor','quanto','honorário','cobrar','tabela'],                   responseType:'fixed', fixedResponse:'Manda um direct agora que a gente conversa sobre isso! 📩', enabled:true, hitCount:0 },
+  { id:'default-5', label:'Parceria / Contratar',       keywords:['parceria','contratar','trabalhar','serviço','cliente','orçamento'],        responseType:'fixed', fixedResponse:'Que ótimo! Manda um direct que a gente conversa 🤝', enabled:true, hitCount:0 },
+  { id:'default-6', label:'Elogio / Parabéns',          keywords:['parabéns','incrível','excelente','show','demais','top','muito bom','ótimo','perfeito','manda bem'], responseType:'fixed', fixedResponse:'Valeu! 🙏 Fico feliz que tenha gostado, continua acompanhando!', enabled:true, hitCount:0 }
+];
+
 function readTriggers() {
-  try { return JSON.parse(fs.readFileSync(TRIGGERS_PATH, 'utf8')); }
-  catch { return []; }
+  try {
+    const arr = JSON.parse(fs.readFileSync(TRIGGERS_PATH, 'utf8'));
+    if (arr && arr.length > 0) return arr;
+  } catch {}
+  // Arquivo vazio ou inexistente (Railway restart) → usa padrões embutidos
+  return DEFAULT_TRIGGERS;
 }
 function writeTriggers(arr) {
   fs.writeFileSync(TRIGGERS_PATH, JSON.stringify(arr, null, 2), 'utf8');
@@ -479,11 +501,13 @@ async function runAutoResponder(claudeClient) {
       catch (e) { console.error(`  ⚠️ Post ${post.id}:`, e.message); continue; }
 
       for (const comment of (comments.data || [])) {
-        // DUPLA PROTEÇÃO: arquivo local + verificação via API
-        // Isso evita respostas duplas mesmo após restart do Railway
+        // PROTEÇÃO 1: cache local (rápido)
         if (replied.has(comment.id)) continue;
-        if (alreadyRepliedViaApi(comment, arCfg.igUsername)) {
-          replied.add(comment.id); // sincroniza o cache local
+
+        // PROTEÇÃO 2: verificação direta via API (funciona mesmo após restart Railway)
+        const jaRespondido = await alreadyRepliedViaApi(comment.id, arCfg.igUsername, cfg.accessToken);
+        if (jaRespondido) {
+          replied.add(comment.id); // sincroniza cache local
           writeReplied(replied);
           continue;
         }
