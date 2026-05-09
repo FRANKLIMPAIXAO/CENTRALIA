@@ -366,7 +366,8 @@ async function fetchRecentPosts(igUserId, accessToken) {
 
 async function fetchComments(mediaId, accessToken) {
   const base = getGraphBase(accessToken);
-  const qs   = new URLSearchParams({ fields: 'id,text,username,timestamp', access_token: accessToken });
+  // limit=100 para pegar mais comentários (padrão API é 25 — insuficiente para posts com spam)
+  const qs   = new URLSearchParams({ fields: 'id,text,username,timestamp', limit: '100', access_token: accessToken });
   const res  = await fetch(`${base}/${mediaId}/comments?${qs}`);
   const data = await res.json();
   const err  = igError(data); if (err) throw err;
@@ -498,7 +499,7 @@ async function runAutoResponder(claudeClient) {
 
     for (const post of postList) {
       console.log(`   post ${post.id}: comments_count=${post.comments_count}`);
-      if (!post.comments_count || post.comments_count === 0) continue;
+      // Não pula posts com comments_count=0 — API às vezes retorna 0 mesmo com comentários
 
       let comments;
       try { comments = await fetchComments(post.id, cfg.accessToken); }
