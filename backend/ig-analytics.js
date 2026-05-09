@@ -108,7 +108,7 @@ async function fetchFullAnalytics(igUserId, token, claudeClient) {
   let insights = [];
   try {
     const msg = await claudeClient.messages.create({
-      model: 'claude-sonnet-4-20250514', max_tokens: 700,
+      model: 'claude-opus-4-5', max_tokens: 700,
       system: `Você é o coach de Instagram do Franklim Paixão (@franklim.contador). Analise os dados e gere exatamente 4 insights acionáveis. Retorne SOMENTE JSON válido sem markdown. Formato: {"insights":[{"icone":"emoji","titulo":"título curto","acao":"o que fazer agora em 1 frase direta"}]}`,
       messages: [{ role: 'user', content: `Dados 30 dias: ${JSON.stringify(summary)}\nTop 3 posts: ${JSON.stringify(posts.slice(0,3).map(p => ({ caption: p.caption.slice(0,80), type: p.type, engagement: p.engagement, reach: p.reach, er: p.er })))}` }]
     });

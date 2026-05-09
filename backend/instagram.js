@@ -501,29 +501,29 @@ async function runAutoResponder(claudeClient) {
       catch (e) { console.error(`  ⚠️ Post ${post.id}:`, e.message); continue; }
 
       for (const comment of (comments.data || [])) {
-        // PROTEÇÃO 1: cache local (rápido)
+        // 1. Cache local — rápido, evita reprocessar
         if (replied.has(comment.id)) continue;
 
-        // PROTEÇÃO 2: verificação direta via API (funciona mesmo após restart Railway)
-        const jaRespondido = await alreadyRepliedViaApi(comment.id, arCfg.igUsername, cfg.accessToken);
-        if (jaRespondido) {
-          replied.add(comment.id); // sincroniza cache local
-          writeReplied(replied);
-          continue;
-        }
-
-        // Pula comentários do próprio dono da conta
+        // 2. Pula comentários do próprio dono da conta
         if (arCfg.igUsername && comment.username === arCfg.igUsername) {
           replied.add(comment.id);
           continue;
         }
 
-        // Verifica gatilho
+        // 3. Checa gatilho ANTES da chamada API (evita rate limit)
         const trigger  = matchTrigger(comment.text, triggers);
         const hasTrigs = triggers.length > 0;
 
-        // Se há gatilhos mas nenhum bateu E respondToAll = false → ignora (sem marcar replied)
+        // Se não bate nenhum gatilho e respondToAll = false → ignora sem chamar API
         if (hasTrigs && !trigger && !arCfg.respondToAll) {
+          continue;
+        }
+
+        // 4. Só agora verifica via API se já respondemos (chamada cara — só para quem vai responder)
+        const jaRespondido = await alreadyRepliedViaApi(comment.id, arCfg.igUsername, cfg.accessToken);
+        if (jaRespondido) {
+          replied.add(comment.id);
+          writeReplied(replied);
           continue;
         }
 
