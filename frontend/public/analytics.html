@@ -5,87 +5,123 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Analytics Instagram — Central IA</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0a0a0a;color:#e8e8e8;font-family:'Courier New',monospace;font-size:13px;min-height:100vh}
-.topbar{background:#111;border-bottom:1px solid #222;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
-.logo{color:#b8ff57;font-weight:700;font-size:14px}
-.btn{background:transparent;border:1px solid #333;color:#aaa;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:11px}
-.btn-primary{background:#b8ff57;color:#0a0a0a;border-color:#b8ff57;font-weight:700}
-.container{max-width:1100px;margin:0 auto;padding:24px 20px}
-.section-title{font-size:10px;letter-spacing:.08em;color:#555;text-transform:uppercase;margin:24px 0 10px;border-bottom:1px solid #1a1a1a;padding-bottom:6px}
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
-.kpi{background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px}
-.kpi-label{font-size:10px;color:#555;text-transform:uppercase;margin-bottom:4px}
-.kpi-value{font-size:22px;font-weight:700;color:#e8e8e8}
-.kpi-sub{font-size:10px;color:#555;margin-top:3px}
-.chart-card{background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:16px;margin-bottom:8px}
-.chart-wrap{position:relative;width:100%;height:180px}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px}
-.post-card{background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px}
-.post-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-.post-type{font-size:9px;padding:2px 7px;border-radius:999px;font-weight:700}
-.type-reel{background:#1a2a1a;color:#b8ff57}
-.type-carousel{background:#1a1a2a;color:#7bb3ff}
-.type-image{background:#2a1a1a;color:#ffaa55}
-.type-feed{background:#2a1a2a;color:#dd88ff}
-.post-date{font-size:10px;color:#444;margin-left:auto}
-.post-caption{font-size:11px;color:#888;line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.post-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
-.post-metric{text-align:center}
-.post-metric-val{font-size:13px;font-weight:700;color:#e8e8e8}
-.post-metric-label{font-size:9px;color:#444;text-transform:uppercase}
-.post-er{font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;background:#1a2a1a;color:#b8ff57;margin-left:auto}
-.insight-list{display:flex;flex-direction:column;gap:8px}
-.insight{background:#111;border:1px solid #1e1e1e;border-left:3px solid #b8ff57;border-radius:0 6px 6px 0;padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
-.insight-icon{font-size:18px;flex-shrink:0}
-.insight-title{font-size:12px;font-weight:700;color:#e8e8e8;margin-bottom:3px}
-.insight-acao{font-size:11px;color:#888;line-height:1.5}
-.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;color:#555}
-.loading-spinner{width:32px;height:32px;border:2px solid #222;border-top-color:#b8ff57;border-radius:50%;animation:spin .8s linear infinite}
+:root{
+  --green:#00D4A0;--green-dim:#00D4A018;--green-border:#00D4A035;--green-glow:#00D4A040;
+  --bg:#080c14;--bg-card:#0e1520;--bg-card2:#121b2a;--bg-modal:#0a1018;--bg-input:#0f1824;
+  --text:#e8edf8;--text-sub:#7e8cb0;--text-muted:#3a4468;
+  --border:#1e2840;--border2:#151f30;
+  --red:#ff5c72;--yellow:#f5c542;--blue:#4f9eff;
+}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;position:relative;}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(#ffffff04 1px,transparent 1px),linear-gradient(90deg,#ffffff04 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+.container{max-width:1100px;margin:0 auto;padding:32px 24px;position:relative;z-index:1;}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:3px;text-transform:uppercase;margin:28px 0 14px;display:flex;align-items:center;gap:12px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+.kpi{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;}
+.kpi-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+.kpi-value{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-0.5px;}
+.kpi-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:4px;}
+.chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:10px;}
+.chart-card-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:16px;}
+.chart-wrap{position:relative;width:100%;height:190px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.posts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px;}
+.post-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px;transition:.2s;}
+.post-card.high-er{border-color:var(--green-border);background:var(--green-dim);}
+.post-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.post-type{font-family:'JetBrains Mono',monospace;font-size:9px;padding:3px 9px;border-radius:999px;font-weight:600;letter-spacing:1px;}
+.type-reel{background:var(--green-dim);color:var(--green);border:1px solid var(--green-border);}
+.type-carousel{background:#0d1a2e;color:var(--blue);border:1px solid #1e2f4a;}
+.type-image{background:#1a140d;color:var(--yellow);border:1px solid #2e2010;}
+.type-feed{background:#1a0d1a;color:#dd88ff;border:1px solid #2e1a2e;}
+.post-date{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);margin-left:auto;}
+.post-caption{font-size:12px;color:var(--text-sub);line-height:1.6;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.post-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;}
+.post-metric{text-align:center;}
+.post-metric-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--text);}
+.post-metric-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);text-transform:uppercase;margin-top:2px;}
+.post-er{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--green-dim);color:var(--green);margin-left:auto;}
+.post-er.low{background:var(--bg-card2);color:var(--text-muted);}
+.insight-list{display:flex;flex-direction:column;gap:10px;}
+.insight{background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:0 14px 14px 0;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;}
+.insight-icon{font-size:20px;flex-shrink:0;}
+.insight-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.insight-acao{font-size:13px;color:var(--text-sub);line-height:1.6;}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;color:var(--text-muted);}
+.loading-spinner{width:36px;height:36px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
-.error-box{background:#1a0a0a;border:1px solid #ff5757;border-radius:6px;padding:16px;color:#ff5757;font-size:12px;margin:20px 0}
-.hidden{display:none}
-.account-header{display:flex;align-items:center;gap:16px;background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:14px 16px;margin-bottom:16px}
-.account-avatar{width:44px;height:44px;border-radius:50%;background:#1a2a1a;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#b8ff57;flex-shrink:0}
-.account-name{font-size:14px;font-weight:700;color:#e8e8e8}
-.account-username{font-size:11px;color:#555}
-.account-bio{font-size:11px;color:#666;margin-top:4px;line-height:1.4}
-@media(max-width:600px){.two-col{grid-template-columns:1fr}.kpi-value{font-size:18px}}
+.error-box{background:#1a0a10;border:1px solid var(--red);border-radius:12px;padding:16px 20px;color:var(--red);font-size:13px;margin:20px 0;}
+.hidden{display:none;}
+.account-header{display:flex;align-items:center;gap:18px;background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:20px;}
+.account-avatar{width:48px;height:48px;border-radius:50%;background:var(--green-dim);border:2px solid var(--green-border);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--green);flex-shrink:0;}
+.account-name{font-size:16px;font-weight:600;color:var(--text);}
+.account-username{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);margin-top:2px;}
+.account-bio{font-size:12px;color:var(--text-sub);margin-top:5px;line-height:1.5;}
+.page-btn-primary{background:var(--green);border:none;border-radius:10px;padding:10px 20px;color:#000;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:.2s;}
+.page-btn-primary:hover{background:#00e8b0;}
+.page-btn-sec{background:transparent;border:1px solid var(--border);border-radius:10px;padding:9px 18px;color:var(--text-sub);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;transition:.2s;text-decoration:none;display:inline-block;}
+.page-btn-sec:hover{border-color:var(--green-border);color:var(--green);}
+@media(max-width:600px){.two-col{grid-template-columns:1fr}.kpi-value{font-size:20px}}
 </style>
 </head>
 <body>
-<div class="topbar">
-  <div style="display:flex;align-items:center;gap:12px">
-    <span class="logo">CENTRAL IA</span>
-    <span style="color:#555;font-size:11px">// ANALYTICS · @franklim.contador</span>
+
+<!-- TOPBAR -->
+<div style="position:sticky;top:0;z-index:100;background:rgba(8,12,20,.95);border-bottom:1px solid var(--border);backdrop-filter:blur(20px);padding:14px 24px;display:flex;align-items:center;justify-content:space-between">
+  <div style="display:flex;align-items:center;gap:16px">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--green)">CENTRAL IA</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:2px">// ANALYTICS INSTAGRAM</span>
   </div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <span id="last-update" style="font-size:10px;color:#444"></span>
-    <button class="btn btn-primary" onclick="loadAnalytics()">↻ Atualizar</button>
-    <a href="/" class="btn">← Voltar</a>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span id="last-update" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted)"></span>
+    <button class="page-btn-primary" onclick="loadAnalytics()">↻ Atualizar</button>
+    <a href="/" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;transition:.2s" onmouseover="this.style.color='var(--green)';this.style.borderColor='var(--green-border)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">← VOLTAR</a>
   </div>
 </div>
+
 <div class="container">
-  <div id="loading" class="loading"><div class="loading-spinner"></div><span>Buscando dados do Instagram...</span></div>
+  <div id="loading" class="loading">
+    <div class="loading-spinner"></div>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px">Buscando dados do Instagram...</span>
+  </div>
   <div id="error-box" class="error-box hidden"></div>
   <div id="dashboard" class="hidden">
     <div id="account-header" class="account-header"></div>
-    <div class="section-title">◉ resumo — últimos 30 dias</div>
+
+    <div class="section-label">Resumo — últimos 30 dias</div>
     <div class="kpi-grid" id="kpi-grid"></div>
-    <div class="section-title">◉ alcance diário</div>
-    <div class="chart-card"><div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:14px">Alcance por dia</div><div class="chart-wrap"><canvas id="reachChart" role="img" aria-label="Alcance diário dos últimos 30 dias"></canvas></div></div>
-    <div class="two-col">
-      <div class="chart-card"><div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:14px">Audiência — faixa etária</div><div class="chart-wrap"><canvas id="ageChart" role="img" aria-label="Distribuição por faixa etária"></canvas></div></div>
-      <div class="chart-card"><div style="font-size:10px;color:#555;text-transform:uppercase;margin-bottom:14px">Audiência — gênero</div><div class="chart-wrap"><canvas id="genderChart" role="img" aria-label="Distribuição por gênero"></canvas></div></div>
+
+    <div class="section-label">Alcance diário</div>
+    <div class="chart-card">
+      <div class="chart-card-label">Alcance por dia</div>
+      <div class="chart-wrap"><canvas id="reachChart" role="img" aria-label="Alcance diário dos últimos 30 dias"></canvas></div>
     </div>
-    <div class="section-title">◉ top posts — engajamento</div>
+
+    <div class="two-col">
+      <div class="chart-card">
+        <div class="chart-card-label">Audiência — faixa etária</div>
+        <div class="chart-wrap"><canvas id="ageChart" role="img" aria-label="Distribuição por faixa etária"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-label">Audiência — gênero</div>
+        <div class="chart-wrap"><canvas id="genderChart" role="img" aria-label="Distribuição por gênero"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-label">Top posts — engajamento</div>
     <div class="posts-grid" id="posts-grid"></div>
-    <div class="section-title">◉ insights — gerados por IA</div>
+
+    <div class="section-label">Insights — gerados por IA</div>
     <div class="insight-list" id="insights-list"></div>
   </div>
 </div>
+
 <script>
 const AUTH_KEY='cia_token',token=localStorage.getItem(AUTH_KEY)||'';
 let rCI=null,aCI=null,gCI=null;
@@ -108,21 +144,22 @@ async function loadAnalytics(){
 }
 function renderDashboard(data){
   const{account,summary,daily,posts,audience,insights}=data;
-  document.getElementById('account-header').innerHTML=`<div class="account-avatar">${(account.username||'F')[0].toUpperCase()}</div><div><div class="account-name">${account.name||account.username}</div><div class="account-username">@${account.username}</div>${account.biography?`<div class="account-bio">${account.biography.slice(0,120)}</div>`:''}</div><div style="margin-left:auto;text-align:right"><div style="font-size:18px;font-weight:700;color:#e8e8e8">${fmt(summary.followers)}</div><div style="font-size:10px;color:#555">seguidores</div></div>`;
+  document.getElementById('account-header').innerHTML=`<div class="account-avatar">${(account.username||'F')[0].toUpperCase()}</div><div><div class="account-name">${account.name||account.username}</div><div class="account-username">@${account.username}</div>${account.biography?`<div class="account-bio">${account.biography.slice(0,120)}</div>`:''}</div><div style="margin-left:auto;text-align:right"><div style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:var(--green)">${fmt(summary.followers)}</div><div class="kpi-label" style="margin:0;margin-top:4px">seguidores</div></div>`;
   const kpis=[{label:'novos seguidores',value:'+'+fmt(summary.totalNewFollowers),sub:'no período'},{label:'alcance total',value:fmt(summary.totalReach),sub:'alcance único'},{label:'impressões',value:fmt(summary.totalImpressions),sub:'visualizações'},{label:'engajamento',value:fmt(summary.totalEngagement),sub:`ER ${summary.avgER}% s/ alcance`},{label:'likes',value:fmt(summary.totalLikes),sub:''},{label:'saves',value:fmt(summary.totalSaves),sub:'sinal forte p/ algoritmo'},{label:'comentários',value:fmt(summary.totalComments),sub:''},{label:'shares',value:fmt(summary.totalShares),sub:''}];
   document.getElementById('kpi-grid').innerHTML=kpis.map(k=>`<div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div>${k.sub?`<div class="kpi-sub">${k.sub}</div>`:''}</div>`).join('');
   const rd=daily.reach||[],labels=rd.map(v=>v.date?v.date.slice(5):''),values=rd.map(v=>v.value||0);
   if(rCI)rCI.destroy();
-  rCI=new Chart(document.getElementById('reachChart'),{type:'line',data:{labels,datasets:[{label:'Alcance',data:values,borderColor:'#b8ff57',backgroundColor:'rgba(184,255,87,0.06)',fill:true,tension:0.3,pointRadius:values.map(v=>v>(Math.max(...values)*0.5)?4:2),borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#444',font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:10},grid:{color:'#1a1a1a'}},y:{ticks:{color:'#444',font:{size:9},callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:'#1a1a1a'}}}}});
+  rCI=new Chart(document.getElementById('reachChart'),{type:'line',data:{labels,datasets:[{label:'Alcance',data:values,borderColor:'#00D4A0',backgroundColor:'rgba(0,212,160,0.06)',fill:true,tension:0.3,pointRadius:values.map(v=>v>(Math.max(...values)*0.5)?4:2),borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#3a4468',font:{size:9},maxRotation:45,autoSkip:true,maxTicksLimit:10},grid:{color:'#1e2840'}},y:{ticks:{color:'#3a4468',font:{size:9},callback:v=>v>=1000?(v/1000).toFixed(0)+'K':v},grid:{color:'#1e2840'}}}}});
   const ab={};for(const i of(audience.ageGender||[])){const d=i.dimension_values||[],a=d[0]||d[1]||'?';ab[a]=(ab[a]||0)+(i.value||0);}
   const al=Object.keys(ab).sort(),av=al.map(k=>ab[k]);
   if(aCI)aCI.destroy();
-  aCI=new Chart(document.getElementById('ageChart'),{type:'bar',data:{labels:al.length?al:['35-44','25-34','45-54','18-24','55-64','65+'],datasets:[{data:av.length?av:[855,616,547,120,277,157],backgroundColor:'#2a3a2a',borderColor:'#b8ff57',borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#444',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#444',font:{size:9}},grid:{color:'#1a1a1a'}}}}});
+  aCI=new Chart(document.getElementById('ageChart'),{type:'bar',data:{labels:al.length?al:['35-44','25-34','45-54','18-24','55-64','65+'],datasets:[{data:av.length?av:[855,616,547,120,277,157],backgroundColor:'#1e2840',borderColor:'#00D4A0',borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#3a4468',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#3a4468',font:{size:9}},grid:{color:'#1e2840'}}}}});
   const gm={};for(const i of(audience.gender||[])){const k=(i.dimension_values?.[0]||'?').toUpperCase();gm[k]=(i.value||0);}
-  const gl=Object.keys(gm).length?Object.keys(gm):['M','F','U'],gv=gl.map(k=>gm[k]||0),gc={M:'#378ADD',F:'#D4537E',U:'#444',MALE:'#378ADD',FEMALE:'#D4537E',UNKNOWN:'#444'};
+  const gl=Object.keys(gm).length?Object.keys(gm):['M','F','U'],gv=gl.map(k=>gm[k]||0),gc={M:'#4f9eff',F:'#ff5c72',U:'#3a4468',MALE:'#4f9eff',FEMALE:'#ff5c72',UNKNOWN:'#3a4468'};
   if(gCI)gCI.destroy();
-  gCI=new Chart(document.getElementById('genderChart'),{type:'doughnut',data:{labels:gl,datasets:[{data:gv.some(v=>v>0)?gv:[51,36,13],backgroundColor:gl.map(l=>gc[l]||'#555'),borderColor:'#0a0a0a',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#555',font:{size:10},boxWidth:10,padding:12}}}}});
-  document.getElementById('posts-grid').innerHTML=(posts||[]).map(p=>`<div class="post-card"><div class="post-header"><span class="post-type ${typeClass(p.type)}">${typeLabel(p.type)}</span><span class="post-er">ER ${p.er}%</span><span class="post-date">${formatDate(p.timestamp)}</span></div><div class="post-caption">${p.caption||'(sem legenda)'}</div><div class="post-metrics"><div class="post-metric"><div class="post-metric-val">${fmt(p.reach)}</div><div class="post-metric-label">alcance</div></div><div class="post-metric"><div class="post-metric-val">${fmt(p.likes)}</div><div class="post-metric-label">likes</div></div><div class="post-metric"><div class="post-metric-val">${fmt(p.saved)}</div><div class="post-metric-label">saves</div></div><div class="post-metric"><div class="post-metric-val">${fmt(p.shares)}</div><div class="post-metric-label">shares</div></div></div></div>`).join('');
+  gCI=new Chart(document.getElementById('genderChart'),{type:'doughnut',data:{labels:gl,datasets:[{data:gv.some(v=>v>0)?gv:[51,36,13],backgroundColor:gl.map(l=>gc[l]||'#3a4468'),borderColor:'#080c14',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#7e8cb0',font:{size:10},boxWidth:10,padding:12}}}}});
+  const avgER=parseFloat(summary.avgER)||0;
+  document.getElementById('posts-grid').innerHTML=(posts||[]).map(p=>{const er=parseFloat(p.er)||0;const highEr=er>avgER*1.2;return`<div class="post-card${highEr?' high-er':''}"><div class="post-header"><span class="post-type ${typeClass(p.type)}">${typeLabel(p.type)}</span><span class="post-er${er<1?' low':''}">ER ${p.er}%</span><span class="post-date">${formatDate(p.timestamp)}</span></div><div class="post-caption">${p.caption||'(sem legenda)'}</div><div class="post-metrics"><div class="post-metric"><div class="post-metric-val">${fmt(p.reach)}</div><div class="post-metric-label">alcance</div></div><div class="post-metric"><div class="post-metric-val">${fmt(p.likes)}</div><div class="post-metric-label">likes</div></div><div class="post-metric"><div class="post-metric-val">${fmt(p.saved)}</div><div class="post-metric-label">saves</div></div><div class="post-metric"><div class="post-metric-val">${fmt(p.shares)}</div><div class="post-metric-label">shares</div></div></div></div>`}).join('');
   document.getElementById('insights-list').innerHTML=(insights||[]).map(i=>`<div class="insight"><span class="insight-icon">${i.icone||'💡'}</span><div><div class="insight-title">${i.titulo}</div><div class="insight-acao">${i.acao}</div></div></div>`).join('');
   document.getElementById('dashboard').classList.remove('hidden');
 }

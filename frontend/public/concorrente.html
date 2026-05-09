@@ -4,99 +4,124 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Analisar Concorrente — Central IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0a0a0a;color:#e8e8e8;font-family:'Courier New',monospace;font-size:13px;min-height:100vh}
-.topbar{background:#111;border-bottom:1px solid #222;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
-.logo{color:#b8ff57;font-weight:700;font-size:14px;letter-spacing:.05em}
-.breadcrumb{color:#555;font-size:11px;margin-left:12px}
-.btn{background:transparent;border:1px solid #333;color:#aaa;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:11px;transition:all .15s}
-.btn:hover{border-color:#b8ff57;color:#b8ff57}
-.btn-primary{background:#b8ff57;color:#0a0a0a;border-color:#b8ff57;font-weight:700}
-.btn-primary:hover{background:#c8ff77}
-.btn-primary:disabled{background:#3a4a1a;color:#556a22;border-color:#3a4a1a;cursor:not-allowed}
-.btn-sm{padding:4px 10px;font-size:10px}
-.container{max-width:900px;margin:0 auto;padding:24px 20px}
-.section-title{font-size:10px;letter-spacing:.08em;color:#555;text-transform:uppercase;margin:24px 0 10px;border-bottom:1px solid #1a1a1a;padding-bottom:6px}
-.card{background:#111;border:1px solid #1e1e1e;border-radius:8px;padding:16px;margin-bottom:10px}
-.input-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
-.input-group{display:flex;flex-direction:column;gap:4px;flex:1}
-.input-label{font-size:10px;color:#555;text-transform:uppercase;letter-spacing:.04em}
-input[type=text],input[type=number]{background:#0a0a0a;border:1px solid #2a2a2a;color:#e8e8e8;padding:8px 10px;border-radius:4px;font-family:inherit;font-size:12px;width:100%}
-input[type=text]:focus,input[type=number]:focus{outline:none;border-color:#b8ff57}
-input[type=number]{width:100%}
-textarea{background:#0a0a0a;border:1px solid #2a2a2a;color:#e8e8e8;padding:10px 12px;border-radius:4px;font-family:inherit;font-size:12px;width:100%;resize:vertical;line-height:1.6}
-textarea:focus{outline:none;border-color:#b8ff57}
-.post-entry{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:6px;padding:12px;margin-bottom:8px;position:relative}
-.post-num{font-size:10px;color:#555;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
-.post-grid{display:grid;grid-template-columns:1fr 80px 80px 80px;gap:8px;align-items:start}
-.remove-btn{position:absolute;top:10px;right:10px;background:transparent;border:none;color:#444;cursor:pointer;font-size:14px;padding:2px 6px}
-.remove-btn:hover{color:#ff5757}
-.add-post-btn{width:100%;padding:10px;background:transparent;border:1px dashed #2a2a2a;color:#444;border-radius:6px;cursor:pointer;font-family:inherit;font-size:11px;transition:all .15s;margin-top:4px}
-.add-post-btn:hover{border-color:#b8ff57;color:#b8ff57}
-.format-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.format-tag{font-size:10px;padding:3px 10px;border-radius:999px;border:1px solid #2a2a2a;color:#555;cursor:pointer;transition:all .15s;user-select:none}
-.format-tag.active{background:#1a2a1a;border-color:#b8ff57;color:#b8ff57}
-.spinner{display:inline-block;width:14px;height:14px;border:2px solid #333;border-top-color:#b8ff57;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+:root{
+  --green:#00D4A0;--green-dim:#00D4A018;--green-border:#00D4A035;--green-glow:#00D4A040;
+  --bg:#080c14;--bg-card:#0e1520;--bg-card2:#121b2a;--bg-modal:#0a1018;--bg-input:#0f1824;
+  --text:#e8edf8;--text-sub:#7e8cb0;--text-muted:#3a4468;
+  --border:#1e2840;--border2:#151f30;
+  --red:#ff5c72;--yellow:#f5c542;--blue:#4f9eff;
+}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;position:relative;}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(#ffffff04 1px,transparent 1px),linear-gradient(90deg,#ffffff04 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+.container{max-width:900px;margin:0 auto;padding:32px 24px;position:relative;z-index:1;}
+.page-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1rem;}
+.page-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:8px;}
+.page-input{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:13px;outline:none;transition:.2s;box-sizing:border-box;}
+.page-input:focus{border-color:var(--green);}
+.page-btn-primary{background:var(--green);border:none;border-radius:10px;padding:12px 24px;color:#000;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:.2s;}
+.page-btn-primary:hover{background:#00e8b0;}
+.page-btn-primary:disabled{background:var(--bg-card2);color:var(--text-muted);cursor:not-allowed;}
+.page-btn-sec{background:transparent;border:1px solid var(--border);border-radius:10px;padding:10px 20px;color:var(--text-sub);font-family:'Space Grotesk',sans-serif;font-size:13px;cursor:pointer;transition:.2s;}
+.page-btn-sec:hover{border-color:var(--green-border);color:var(--green);}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:3px;text-transform:uppercase;margin:28px 0 14px;display:flex;align-items:center;gap:12px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.input-row{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;}
+.input-group{display:flex;flex-direction:column;gap:6px;flex:1;}
+textarea.page-input{resize:vertical;line-height:1.6;}
+.post-entry{background:var(--bg-card2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;position:relative;}
+.post-num{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;}
+.post-grid{display:grid;grid-template-columns:1fr 90px 90px 90px;gap:10px;align-items:start;margin-top:10px;}
+.remove-btn{position:absolute;top:14px;right:14px;background:transparent;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:2px 6px;transition:.2s;}
+.remove-btn:hover{color:var(--red);}
+.add-post-btn{width:100%;padding:14px;background:transparent;border:1px dashed var(--border);color:var(--text-muted);border-radius:12px;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:13px;transition:all .2s;margin-top:4px;}
+.add-post-btn:hover{border-color:var(--green-border);color:var(--green);}
+.format-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.format-tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 14px;border-radius:999px;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;transition:all .2s;user-select:none;}
+.format-tag.active{background:var(--green-dim);border-color:var(--green-border);color:var(--green);}
+select.page-input{cursor:pointer;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px;}
 @keyframes spin{to{transform:rotate(360deg)}}
-.hidden{display:none}
-.error-box{background:#1a0a0a;border:1px solid #ff5757;border-radius:6px;padding:12px 14px;color:#ff5757;font-size:12px;margin-top:10px}
-.report-block{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:6px;padding:14px;margin-bottom:8px}
-.report-block-title{font-size:10px;font-weight:700;color:#b8ff57;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
-.report-text{font-size:12px;color:#ccc;line-height:1.8;white-space:pre-wrap}
-.score-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:16px}
-.score-card{background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:10px 12px}
-.score-val{font-size:16px;font-weight:700;color:#e8e8e8}
-.score-label{font-size:10px;color:#555;margin-top:2px}
-.insight-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #1a1a1a}
-.insight-item:last-child{border-bottom:none}
-.insight-ico{font-size:16px;flex-shrink:0;margin-top:1px}
-.insight-body{font-size:12px;color:#ccc;line-height:1.6}
-.insight-body strong{color:#e8e8e8;font-weight:700}
-.opp-item{border-left:3px solid #b8ff57;padding:8px 12px;margin-bottom:8px;background:#0a0a0a;border-radius:0 4px 4px 0}
-.opp-title{font-size:12px;font-weight:700;color:#e8e8e8;margin-bottom:3px}
-.opp-body{font-size:11px;color:#888;line-height:1.5}
-.tip-box{background:#0f1a0a;border:1px solid #2a3a1a;border-radius:6px;padding:10px 14px;font-size:11px;color:#6a8a4a;line-height:1.6}
-.progress-wrap{background:#1a1a1a;border-radius:4px;height:3px;overflow:hidden}
-.progress-bar{height:100%;background:#b8ff57;width:0;transition:width .4s}
-.progress-label{font-size:10px;color:#555;margin-top:6px;text-align:center}
-.tab-row{display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid #1a1a1a}
-.tab{padding:8px 14px;font-size:11px;cursor:pointer;color:#555;border-bottom:2px solid transparent;transition:all .15s;font-family:inherit;background:none;border-top:none;border-left:none;border-right:none}
-.tab.active{color:#b8ff57;border-bottom-color:#b8ff57}
-.tab-content{display:none}
-.tab-content.active{display:block}
-.copy-btn{font-size:10px;color:#555;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:4px;padding:4px 10px;cursor:pointer}
-.copy-btn:hover{color:#e8e8e8}
-.copied-state{color:#b8ff57!important;border-color:#b8ff57!important}
-select.post-tipo{background:#0a0a0a;border:1px solid #2a2a2a;color:#aaa;padding:6px 8px;border-radius:4px;font-family:inherit;font-size:11px;width:100%}
+.hidden{display:none;}
+.error-box{background:#1a0a10;border:1px solid var(--red);border-radius:12px;padding:14px 18px;color:var(--red);font-size:13px;margin-top:12px;}
+.tip-box{background:var(--green-dim);border:1px solid var(--green-border);border-radius:12px;padding:14px 18px;font-size:13px;color:var(--text-sub);line-height:1.7;margin-bottom:12px;}
+.tip-box strong{color:var(--green);}
+.progress-wrap{background:var(--border2);border-radius:6px;height:4px;overflow:hidden;}
+.progress-bar{height:100%;background:var(--green);width:0;transition:width .4s;}
+.progress-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:8px;text-align:center;letter-spacing:1px;}
+.score-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px;}
+.score-card{background:var(--bg-card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.score-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--green);}
+.score-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-top:4px;}
+.tab-row{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border);}
+.tab{padding:10px 18px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;}
+.tab.active{color:var(--green);border-bottom-color:var(--green);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+.report-block{background:var(--bg-card2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;}
+.report-block-title{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--green);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;}
+.report-text{font-size:14px;color:var(--text-sub);line-height:1.9;white-space:pre-wrap;}
+.opp-item{border-left:3px solid var(--green);padding:12px 16px;margin-bottom:10px;background:var(--bg-card2);border-radius:0 10px 10px 0;}
+.opp-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.opp-body{font-size:13px;color:var(--text-sub);line-height:1.6;}
+.insight-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
+.insight-item:last-child{border-bottom:none;}
+.insight-ico{font-size:18px;flex-shrink:0;margin-top:2px;}
+.insight-body{font-size:13px;color:var(--text-sub);line-height:1.7;}
+.insight-body strong{color:var(--text);font-weight:600;}
+.copy-btn{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);background:var(--bg-card2);border:1px solid var(--border);border-radius:8px;padding:7px 14px;cursor:pointer;letter-spacing:1px;transition:.2s;}
+.copy-btn:hover{color:var(--text);border-color:var(--border);}
+.copy-btn.copied-state{color:var(--green);border-color:var(--green-border);}
 </style>
 </head>
 <body>
-<div class="topbar">
-  <div style="display:flex;align-items:center"><span class="logo">CENTRAL IA</span><span class="breadcrumb">// ANÁLISE DE CONCORRENTE</span></div>
-  <div style="display:flex;gap:8px"><a href="/" class="btn">← Voltar</a></div>
+
+<!-- TOPBAR -->
+<div style="position:sticky;top:0;z-index:100;background:rgba(8,12,20,.95);border-bottom:1px solid var(--border);backdrop-filter:blur(20px);padding:14px 24px;display:flex;align-items:center;justify-content:space-between">
+  <div style="display:flex;align-items:center;gap:16px">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--green)">CENTRAL IA</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:2px">// ANÁLISE DE CONCORRENTE</span>
+  </div>
+  <a href="/" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;transition:.2s" onmouseover="this.style.color='var(--green)';this.style.borderColor='var(--green-border)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">← VOLTAR</a>
 </div>
+
 <div class="container">
 
-  <div class="section-title">◉ identificação do concorrente</div>
-  <div class="card">
+  <div class="section-label">Identificação do concorrente</div>
+  <div class="page-card">
     <div class="input-row">
-      <div class="input-group"><span class="input-label">@ Username</span><input type="text" id="username" placeholder="ex: contador.silva" oninput="this.value=this.value.replace('@','')"></div>
-      <div class="input-group" style="max-width:160px"><span class="input-label">Nicho / especialidade</span><input type="text" id="nicho" placeholder="ex: reforma tributária"></div>
-      <div class="input-group" style="max-width:110px"><span class="input-label">Seguidores aprox.</span><input type="number" id="seguidores" placeholder="ex: 5000" min="0"></div>
+      <div class="input-group">
+        <label class="page-label">@ Username</label>
+        <input type="text" class="page-input" id="username" placeholder="ex: contador.silva" oninput="this.value=this.value.replace('@','')">
+      </div>
+      <div class="input-group" style="max-width:180px">
+        <label class="page-label">Nicho / especialidade</label>
+        <input type="text" class="page-input" id="nicho" placeholder="ex: reforma tributária">
+      </div>
+      <div class="input-group" style="max-width:130px">
+        <label class="page-label">Seguidores aprox.</label>
+        <input type="number" class="page-input" id="seguidores" placeholder="ex: 5000" min="0">
+      </div>
     </div>
-    <div class="input-group"><span class="input-label">Observações iniciais (opcional)</span><input type="text" id="obs" placeholder="ex: posta todo dia, foco em IA, muito engagement nos reels"></div>
+    <div class="input-group">
+      <label class="page-label">Observações iniciais (opcional)</label>
+      <input type="text" class="page-input" id="obs" placeholder="ex: posta todo dia, foco em IA, muito engagement nos reels">
+    </div>
   </div>
 
-  <div class="section-title">◉ cole as legendas dos posts</div>
-  <div class="tip-box" style="margin-bottom:10px">📱 <strong>Como coletar:</strong> Abre o perfil → entra em cada post → copia a legenda completa. Cole 10–15 posts para análise precisa.</div>
+  <div class="section-label">Cole as legendas dos posts</div>
+  <div class="tip-box">📱 <strong>Como coletar:</strong> Abre o perfil → entra em cada post → copia a legenda completa. Cole 10–15 posts para análise precisa.</div>
   <div id="postsContainer"></div>
   <button class="add-post-btn" onclick="addPost()">+ Adicionar post</button>
 
-  <div class="section-title">◉ contexto da análise</div>
-  <div class="card">
-    <div class="input-group" style="margin-bottom:10px">
-      <span class="input-label">Formatos que você observou no perfil</span>
+  <div class="section-label">Contexto da análise</div>
+  <div class="page-card">
+    <div class="input-group" style="margin-bottom:16px">
+      <label class="page-label">Formatos que você observou no perfil</label>
       <div class="format-tags" id="formatTags">
         <span class="format-tag" onclick="toggleFormat(this)">Reels</span>
         <span class="format-tag" onclick="toggleFormat(this)">Carrossel</span>
@@ -106,30 +131,30 @@ select.post-tipo{background:#0a0a0a;border:1px solid #2a2a2a;color:#aaa;padding:
       </div>
     </div>
     <div class="input-group">
-      <span class="input-label">O que mais te chama atenção no perfil? (opcional)</span>
-      <textarea id="contexto" rows="2" placeholder="ex: os reels dele viralizam muito, usa muito REFORMA, sempre CTA pra direct..."></textarea>
+      <label class="page-label">O que mais te chama atenção no perfil? (opcional)</label>
+      <textarea class="page-input" id="contexto" rows="2" placeholder="ex: os reels dele viralizam muito, usa muito REFORMA, sempre CTA pra direct..."></textarea>
     </div>
   </div>
 
-  <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
-    <button class="btn btn-primary" id="analyzeBtn" onclick="analyze()">🔍 Analisar concorrente</button>
-    <button class="btn btn-sm" onclick="clearAll()">↻ Limpar tudo</button>
+  <div style="margin-top:20px;display:flex;gap:12px;align-items:center">
+    <button class="page-btn-primary" id="analyzeBtn" onclick="analyze()">🔍 Analisar concorrente</button>
+    <button class="page-btn-sec" onclick="clearAll()">↻ Limpar tudo</button>
   </div>
 
-  <div id="progressWrap" class="hidden" style="margin-top:16px">
+  <div id="progressWrap" class="hidden" style="margin-top:20px">
     <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
     <div class="progress-label" id="progressLabel">Analisando conteúdo...</div>
   </div>
   <div id="errorBox" class="error-box hidden"></div>
 
   <div id="report" class="hidden">
-    <div class="section-title" style="margin-top:32px">◉ relatório — <span id="reportUsername"></span></div>
+    <div class="section-label" style="margin-top:36px">Relatório — <span id="reportUsername" style="color:var(--green)"></span></div>
     <div class="score-grid" id="scoreGrid"></div>
     <div class="tab-row">
-      <button class="tab active" onclick="switchTab('estrategia',this)">Estratégia</button>
-      <button class="tab" onclick="switchTab('conteudo',this)">Conteúdo</button>
-      <button class="tab" onclick="switchTab('oportunidades',this)">Oportunidades</button>
-      <button class="tab" onclick="switchTab('acao',this)">Plano de ação</button>
+      <button class="tab active" onclick="switchTab('estrategia',this)">ESTRATÉGIA</button>
+      <button class="tab" onclick="switchTab('conteudo',this)">CONTEÚDO</button>
+      <button class="tab" onclick="switchTab('oportunidades',this)">OPORTUNIDADES</button>
+      <button class="tab" onclick="switchTab('acao',this)">PLANO DE AÇÃO</button>
     </div>
     <div id="tab-estrategia" class="tab-content active">
       <div class="report-block"><div class="report-block-title">Posicionamento</div><div class="report-text" id="r-posicionamento"></div></div>
@@ -144,11 +169,12 @@ select.post-tipo{background:#0a0a0a;border:1px solid #2a2a2a;color:#aaa;padding:
     <div id="tab-oportunidades" class="tab-content"><div id="r-oportunidades"></div></div>
     <div id="tab-acao" class="tab-content">
       <div id="r-acao"></div>
-      <div style="margin-top:12px"><button class="copy-btn" id="copyReportBtn" onclick="copyReport()">📋 Copiar relatório completo</button></div>
+      <div style="margin-top:16px"><button class="copy-btn" id="copyReportBtn" onclick="copyReport()">📋 Copiar relatório completo</button></div>
     </div>
   </div>
 
 </div>
+
 <script>
 const AUTH_KEY='cia_token',token=localStorage.getItem(AUTH_KEY)||'';
 let postCount=0,reportRaw=null;
@@ -157,7 +183,7 @@ function addPost(caption='',likes='',comments=''){
   postCount++;
   const n=postCount,div=document.createElement('div');
   div.className='post-entry';div.id=`post-${n}`;
-  div.innerHTML=`<div class="post-num">Post ${n}</div><button class="remove-btn" onclick="removePost(${n})">✕</button><textarea rows="3" id="caption-${n}" placeholder="Cole a legenda completa aqui...">${caption}</textarea><div class="post-grid" style="margin-top:8px"><div class="input-group"><span class="input-label">Tipo</span><select id="tipo-${n}" class="post-tipo"><option value="reel">Reel</option><option value="carrossel">Carrossel</option><option value="foto">Foto</option><option value="video">Vídeo</option></select></div><div class="input-group"><span class="input-label">Likes</span><input type="number" id="likes-${n}" placeholder="120" value="${likes}" min="0"></div><div class="input-group"><span class="input-label">Comentários</span><input type="number" id="comments-${n}" placeholder="8" value="${comments}" min="0"></div></div>`;
+  div.innerHTML=`<div class="post-num">Post ${n}</div><button class="remove-btn" onclick="removePost(${n})">✕</button><textarea rows="3" class="page-input" id="caption-${n}" placeholder="Cole a legenda completa aqui..." style="resize:vertical;line-height:1.6">${caption}</textarea><div class="post-grid" style="margin-top:10px"><div class="input-group"><label class="page-label">Tipo</label><select id="tipo-${n}" class="page-input"><option value="reel">Reel</option><option value="carrossel">Carrossel</option><option value="foto">Foto</option><option value="video">Vídeo</option></select></div><div class="input-group"><label class="page-label">Likes</label><input type="number" class="page-input" id="likes-${n}" placeholder="120" value="${likes}" min="0"></div><div class="input-group"><label class="page-label">Comentários</label><input type="number" class="page-input" id="comments-${n}" placeholder="8" value="${comments}" min="0"></div></div>`;
   document.getElementById('postsContainer').appendChild(div);
 }
 function removePost(n){const el=document.getElementById(`post-${n}`);if(el)el.remove();}
@@ -223,7 +249,7 @@ function renderReport(username,r){
   const opps=r.oportunidades||[];
   document.getElementById('r-oportunidades').innerHTML=opps.length?opps.map(o=>`<div class="opp-item"><div class="opp-title">${o.titulo}</div><div class="opp-body">${o.descricao}</div></div>`).join(''):'<div class="report-block"><div class="report-text">Nenhuma oportunidade com os dados fornecidos.</div></div>';
   const acoes=r.planoAcao||[];
-  document.getElementById('r-acao').innerHTML=acoes.length?acoes.map((a,i)=>`<div class="insight-item"><span class="insight-ico">${i<3?['🥇','🥈','🥉'][i]:'▸'}</span><div class="insight-body"><strong>${a.acao}</strong><br>${a.como}</div></div>`).join(''):'<div class="report-text" style="color:#555">Dados insuficientes.</div>';
+  document.getElementById('r-acao').innerHTML=acoes.length?acoes.map((a,i)=>`<div class="insight-item"><span class="insight-ico">${i<3?['🥇','🥈','🥉'][i]:'▸'}</span><div class="insight-body"><strong>${a.acao}</strong><br>${a.como}</div></div>`).join(''):'<div class="report-text" style="color:var(--text-muted)">Dados insuficientes.</div>';
   document.getElementById('report').classList.remove('hidden');
   document.getElementById('report').scrollIntoView({behavior:'smooth',block:'start'});
 }

@@ -4,110 +4,169 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Transcrever Vídeo — Central IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0a0a0a;color:#e8e8e8;font-family:'Courier New',monospace;font-size:13px;min-height:100vh}
-.topbar{background:#111;border-bottom:1px solid #222;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
-.logo{color:#b8ff57;font-weight:700;font-size:14px;letter-spacing:.05em}
-.breadcrumb{color:#555;font-size:11px;margin-left:12px}
-.btn{background:transparent;border:1px solid #333;color:#aaa;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:11px;transition:all .15s}
-.btn:hover{border-color:#b8ff57;color:#b8ff57}
-.btn-primary{background:#b8ff57;color:#0a0a0a;border-color:#b8ff57;font-weight:700}
-.btn-primary:hover{background:#c8ff77}
-.btn-primary:disabled{background:#3a4a1a;color:#556a22;border-color:#3a4a1a;cursor:not-allowed}
-.btn-sm{padding:4px 10px;font-size:10px}
-.container{max-width:860px;margin:0 auto;padding:24px 20px}
-.section-title{font-size:10px;letter-spacing:.08em;color:#555;text-transform:uppercase;margin:24px 0 10px;border-bottom:1px solid #1a1a1a;padding-bottom:6px}
-.drop-zone{border:1px dashed #333;border-radius:8px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#0f0f0f}
-.drop-zone:hover,.drop-zone.drag-over{border-color:#b8ff57;background:#0f1a0a}
-.drop-icon{font-size:32px;margin-bottom:12px}
-.drop-title{font-size:14px;font-weight:700;color:#aaa;margin-bottom:6px}
-.drop-sub{font-size:11px;color:#444;line-height:1.6}
-.drop-formats{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:12px}
-.format-tag{font-size:9px;padding:2px 8px;border-radius:999px;background:#1a1a1a;color:#555;border:1px solid #222}
-.file-info{background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-top:10px}
-.file-name{font-size:12px;font-weight:700;color:#e8e8e8}
-.file-size{font-size:10px;color:#555}
-.options-row{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
-.label{font-size:11px;color:#555}
-select{background:#111;border:1px solid #333;color:#aaa;padding:5px 10px;border-radius:4px;font-family:inherit;font-size:11px;cursor:pointer}
-select:focus{outline:none;border-color:#b8ff57}
-.progress-wrap{background:#1a1a1a;border-radius:4px;height:3px;overflow:hidden}
-.progress-bar{height:100%;background:#b8ff57;width:0;transition:width .3s}
-.progress-label{font-size:10px;color:#555;margin-top:6px;text-align:center}
-.result-card{background:#111;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;margin-top:8px}
-.result-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #1a1a1a}
-.result-title{font-size:11px;font-weight:700;color:#aaa}
-.result-actions{display:flex;gap:6px}
-.result-body{padding:14px;max-height:320px;overflow-y:auto}
-.transcript-text{font-size:12px;line-height:1.8;color:#ccc;white-space:pre-wrap}
-.srt-text{font-size:11px;line-height:1.6;color:#888;white-space:pre;font-family:'Courier New',monospace}
-.stats-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
-.stat{background:#111;border:1px solid #1e1e1e;border-radius:6px;padding:10px 14px;flex:1;min-width:100px}
-.stat-val{font-size:18px;font-weight:700;color:#e8e8e8}
-.stat-label{font-size:10px;color:#555;margin-top:2px}
-.spinner{display:inline-block;width:14px;height:14px;border:2px solid #333;border-top-color:#b8ff57;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+:root{
+  --green:#00D4A0;--green-dim:#00D4A018;--green-border:#00D4A035;--green-glow:#00D4A040;
+  --bg:#080c14;--bg-card:#0e1520;--bg-card2:#121b2a;--bg-modal:#0a1018;--bg-input:#0f1824;
+  --text:#e8edf8;--text-sub:#7e8cb0;--text-muted:#3a4468;
+  --border:#1e2840;--border2:#151f30;
+  --red:#ff5c72;--yellow:#f5c542;--blue:#4f9eff;
+}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;position:relative;}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(#ffffff04 1px,transparent 1px),linear-gradient(90deg,#ffffff04 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+.container{max-width:860px;margin:0 auto;padding:32px 24px;position:relative;z-index:1;}
+.page-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1rem;}
+.page-label{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:8px;}
+.page-input{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:13px;outline:none;transition:.2s;box-sizing:border-box;}
+.page-input:focus{border-color:var(--green);}
+.page-btn-primary{background:var(--green);border:none;border-radius:10px;padding:12px 24px;color:#000;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:.2s;}
+.page-btn-primary:hover{background:#00e8b0;}
+.page-btn-primary:disabled{background:var(--bg-card2);color:var(--text-muted);cursor:not-allowed;}
+.page-btn-sec{background:transparent;border:1px solid var(--border);border-radius:10px;padding:10px 20px;color:var(--text-sub);font-family:'Space Grotesk',sans-serif;font-size:13px;cursor:pointer;transition:.2s;}
+.page-btn-sec:hover{border-color:var(--green-border);color:var(--green);}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:3px;text-transform:uppercase;margin:28px 0 14px;display:flex;align-items:center;gap:12px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.drop-zone{border:2px dashed var(--green-border);border-radius:16px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--green-dim);}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--green);background:var(--green-glow);}
+.drop-icon{font-size:40px;margin-bottom:16px;display:block;}
+.drop-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px;}
+.drop-sub{font-size:13px;color:var(--text-sub);line-height:1.6;}
+.drop-formats{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:16px;}
+.format-tag-badge{font-family:'JetBrains Mono',monospace;font-size:9px;padding:3px 10px;border-radius:999px;background:var(--bg-card2);color:var(--text-muted);border:1px solid var(--border);}
+.file-info{background:var(--bg-card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;margin-top:12px;}
+.file-name{font-size:14px;font-weight:600;color:var(--text);}
+.file-size{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);margin-top:2px;}
+.options-row{display:flex;align-items:center;gap:14px;margin-top:16px;flex-wrap:wrap;}
+.options-row select{background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px 14px;font-family:'Space Grotesk',sans-serif;font-size:13px;cursor:pointer;outline:none;transition:.2s;}
+.options-row select:focus{border-color:var(--green);}
+.progress-wrap{background:var(--border2);border-radius:6px;height:4px;overflow:hidden;}
+.progress-bar{height:100%;background:var(--green);width:0;transition:width .3s;}
+.progress-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);margin-top:8px;text-align:center;letter-spacing:1px;}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:4px;}
+.stat-card{background:var(--bg-card2);border:1px solid var(--border);border-radius:12px;padding:16px;}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:var(--green);}
+.stat-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
+.result-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:8px;}
+.result-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);}
+.result-title{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;}
+.result-body{padding:18px;max-height:340px;overflow-y:auto;}
+.transcript-text{font-size:14px;line-height:1.9;color:var(--text);white-space:pre-wrap;}
+.srt-text{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;color:var(--text-sub);white-space:pre;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px;}
 @keyframes spin{to{transform:rotate(360deg)}}
-.hidden{display:none}
-.error-box{background:#1a0a0a;border:1px solid #ff5757;border-radius:6px;padding:12px 14px;color:#ff5757;font-size:12px;margin-top:10px}
-.tip-box{background:#0f1a0a;border:1px solid #2a3a1a;border-radius:6px;padding:10px 14px;font-size:11px;color:#6a8a4a;line-height:1.6;margin-top:10px}
-.copied{color:#b8ff57!important;border-color:#b8ff57!important}
+.hidden{display:none;}
+.error-box{background:#1a0a10;border:1px solid var(--red);border-radius:12px;padding:14px 18px;color:var(--red);font-size:13px;margin-top:12px;}
+.tip-box{background:var(--green-dim);border:1px solid var(--green-border);border-radius:12px;padding:14px 18px;font-size:13px;color:var(--text-sub);line-height:1.7;margin-top:12px;}
+.tip-box strong{color:var(--green);}
+.btn-sm-sec{background:transparent;border:1px solid var(--border);border-radius:8px;padding:7px 14px;color:var(--text-sub);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;cursor:pointer;transition:.2s;}
+.btn-sm-sec:hover{border-color:var(--green-border);color:var(--green);}
+.btn-sm-sec.copied{color:var(--green);border-color:var(--green-border);}
+.legend-btns{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
 </style>
 </head>
 <body>
-<div class="topbar">
-  <div style="display:flex;align-items:center"><span class="logo">CENTRAL IA</span><span class="breadcrumb">// TRANSCREVER VÍDEO · WHISPER</span></div>
-  <div style="display:flex;gap:8px"><a href="/" class="btn">← Voltar</a></div>
+
+<!-- TOPBAR -->
+<div style="position:sticky;top:0;z-index:100;background:rgba(8,12,20,.95);border-bottom:1px solid var(--border);backdrop-filter:blur(20px);padding:14px 24px;display:flex;align-items:center;justify-content:space-between">
+  <div style="display:flex;align-items:center;gap:16px">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--green)">CENTRAL IA</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:2px">// TRANSCREVER VÍDEO · WHISPER</span>
+  </div>
+  <a href="/" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;transition:.2s" onmouseover="this.style.color='var(--green)';this.style.borderColor='var(--green-border)'" onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">← VOLTAR</a>
 </div>
+
 <div class="container">
-  <div class="section-title">◉ upload — áudio ou vídeo</div>
+
+  <div class="section-label">Upload — áudio ou vídeo</div>
+
   <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-    <div class="drop-icon">🎙️</div>
+    <span class="drop-icon">🎙️</span>
     <div class="drop-title">Arraste o arquivo aqui ou clique para selecionar</div>
     <div class="drop-sub">Sobe o áudio do reel e recebe a transcrição + legenda pronta<br>para importar no CapCut ou Instagram</div>
-    <div class="drop-formats"><span class="format-tag">MP3</span><span class="format-tag">MP4</span><span class="format-tag">M4A</span><span class="format-tag">WAV</span><span class="format-tag">OGG</span><span class="format-tag">WEBM</span></div>
+    <div class="drop-formats">
+      <span class="format-tag-badge">MP3</span>
+      <span class="format-tag-badge">MP4</span>
+      <span class="format-tag-badge">M4A</span>
+      <span class="format-tag-badge">WAV</span>
+      <span class="format-tag-badge">OGG</span>
+      <span class="format-tag-badge">WEBM</span>
+    </div>
   </div>
   <input type="file" id="fileInput" accept=".mp3,.mp4,.m4a,.wav,.ogg,.webm,.oga" style="display:none">
+
   <div id="fileInfo" class="file-info hidden">
-    <span style="font-size:20px">🎵</span>
-    <div><div class="file-name" id="fileName"></div><div class="file-size" id="fileSize"></div></div>
-    <button class="btn btn-sm" onclick="clearFile()" style="margin-left:auto">✕ Remover</button>
+    <span style="font-size:24px">🎵</span>
+    <div>
+      <div class="file-name" id="fileName"></div>
+      <div class="file-size" id="fileSize"></div>
+    </div>
+    <button class="btn-sm-sec" onclick="clearFile()" style="margin-left:auto">✕ Remover</button>
   </div>
-  <div class="tip-box" id="sizeTip" style="display:none">⚠️ Arquivo acima de 20MB. Extraia só o áudio antes de subir. No CapCut: Exportar → apenas áudio. No FFmpeg: ffmpeg -i video.mp4 -vn audio.mp3</div>
+
+  <div class="tip-box hidden" id="sizeTip">⚠️ Arquivo acima de 20MB. Extraia só o áudio antes de subir. No CapCut: Exportar → apenas áudio. No FFmpeg: <code>ffmpeg -i video.mp4 -vn audio.mp3</code></div>
+
   <div class="options-row">
-    <span class="label">Idioma:</span>
-    <select id="language"><option value="pt" selected>Português 🇧🇷</option><option value="en">English 🇺🇸</option><option value="es">Español 🇪🇸</option></select>
-    <button class="btn btn-primary" id="transcribeBtn" onclick="transcribe()" disabled>🎙️ Transcrever</button>
+    <div>
+      <label class="page-label" style="margin-bottom:6px">Idioma</label>
+      <select id="language">
+        <option value="pt" selected>Português 🇧🇷</option>
+        <option value="en">English 🇺🇸</option>
+        <option value="es">Español 🇪🇸</option>
+      </select>
+    </div>
+    <button class="page-btn-primary" id="transcribeBtn" onclick="transcribe()" disabled style="align-self:flex-end">🎙️ Transcrever</button>
   </div>
-  <div id="progressWrap" class="hidden" style="margin-top:16px">
+
+  <div id="progressWrap" class="hidden" style="margin-top:20px">
     <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
     <div class="progress-label" id="progressLabel">Enviando arquivo...</div>
   </div>
+
   <div id="errorBox" class="error-box hidden"></div>
+
   <div id="results" class="hidden">
-    <div class="section-title">◉ resultado</div>
+    <div class="section-label">Resultado</div>
     <div class="stats-row" id="statsRow"></div>
-    <div class="section-title">◉ transcrição</div>
+
+    <div class="section-label">Transcrição</div>
     <div class="result-card">
-      <div class="result-header"><span class="result-title">TEXTO COMPLETO</span><div class="result-actions"><button class="btn btn-sm" id="copyTextBtn" onclick="copyText()">📋 Copiar</button></div></div>
-      <div class="result-body"><div class="transcript-text" id="transcriptText"></div></div>
+      <div class="result-header">
+        <span class="result-title">Texto Completo</span>
+        <button class="btn-sm-sec" id="copyTextBtn" onclick="copyText()">📋 Copiar</button>
+      </div>
+      <div class="result-body">
+        <div class="transcript-text" id="transcriptText"></div>
+      </div>
     </div>
+
     <div id="srtSection" class="hidden">
-      <div class="section-title">◉ legendas</div>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button class="btn btn-primary btn-sm" onclick="downloadSrt()">⬇️ Baixar .SRT</button>
-        <button class="btn btn-primary btn-sm" onclick="downloadVtt()">⬇️ Baixar .VTT</button>
-        <button class="btn btn-sm" onclick="toggleSrtPreview()">👁 Preview</button>
+      <div class="section-label">Legendas</div>
+      <div class="legend-btns">
+        <button class="page-btn-primary" onclick="downloadSrt()" style="font-size:13px;padding:10px 20px">⬇️ Baixar .SRT</button>
+        <button class="page-btn-primary" onclick="downloadVtt()" style="font-size:13px;padding:10px 20px">⬇️ Baixar .VTT</button>
+        <button class="btn-sm-sec" onclick="toggleSrtPreview()" style="padding:10px 16px">👁 Preview</button>
       </div>
       <div id="srtPreview" class="result-card hidden">
-        <div class="result-header"><span class="result-title">PREVIEW SRT</span></div>
+        <div class="result-header"><span class="result-title">Preview SRT</span></div>
         <div class="result-body"><div class="srt-text" id="srtText"></div></div>
       </div>
     </div>
-    <div class="tip-box" style="margin-top:16px">💡 <strong>Como usar:</strong> Instagram Reels → Legendas → Importar → .SRT. CapCut: Texto → Legendas automáticas → Importar .SRT.</div>
-    <div style="margin-top:16px"><button class="btn" onclick="clearAll()">↻ Nova transcrição</button></div>
+
+    <div class="tip-box" style="margin-top:20px">
+      <strong>Como usar:</strong> Instagram Reels → Legendas → Importar → .SRT. CapCut: Texto → Legendas automáticas → Importar .SRT.
+    </div>
+
+    <div style="margin-top:20px">
+      <button class="page-btn-sec" onclick="clearAll()">↻ Nova transcrição</button>
+    </div>
   </div>
+
 </div>
+
 <script>
 const AUTH_KEY='cia_token',token=localStorage.getItem(AUTH_KEY)||'';
 let currentFile=null,resultData=null;
@@ -149,7 +208,7 @@ function animateProgress(){
 }
 function renderResults(data){
   const stats=[{val:fmtDuration(data.duration||0),label:'duração'},{val:data.wordCount||0,label:'palavras'},{val:(data.segments||[]).length,label:'segmentos'},{val:(data.language||'pt').toUpperCase(),label:'idioma detectado'}];
-  document.getElementById('statsRow').innerHTML=stats.map(s=>`<div class="stat"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
+  document.getElementById('statsRow').innerHTML=stats.map(s=>`<div class="stat-card"><div class="stat-val">${s.val}</div><div class="stat-label">${s.label}</div></div>`).join('');
   document.getElementById('transcriptText').textContent=data.text||'';
   if(data.srt){document.getElementById('srtSection').classList.remove('hidden');document.getElementById('srtText').textContent=data.srt;}
   else document.getElementById('srtSection').classList.add('hidden');
