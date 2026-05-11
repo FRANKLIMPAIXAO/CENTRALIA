@@ -1339,57 +1339,79 @@ async function saveIgSettings(){
 /* ══════════════════════════════════════════
    INSTAGRAM — CAPTURA DE SLIDES
 ══════════════════════════════════════════ */
-function captureSlides(){
-  return new Promise((resolve,reject)=>{
-    if(!pl.slidesHtml) return reject(new Error('Nenhum slide disponível.'));
+async function captureSlides(){
+  if(!pl.slidesHtml) throw new Error('Nenhum slide disponível.');
 
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText='position:fixed;left:-9999px;top:0;width:600px;height:5000px;border:none;visibility:hidden;z-index:-1';
-    document.body.appendChild(iframe);
+  // Cria container oculto DIRETO na página (evita iframe — bloqueado pelo iOS Safari)
+  const container = document.createElement('div');
+  container.style.cssText = [
+    'position:fixed','left:-9999px','top:0',
+    'width:540px','height:auto',
+    'z-index:-1','pointer-events:none',
+    'background:#0A0F0A','overflow:visible'
+  ].join(';');
 
-    iframe.onload = async()=>{
-      try{
-        const doc    = iframe.contentDocument || iframe.contentWindow.document;
-        let slides   = Array.from(doc.querySelectorAll('.slide'));
-        if(!slides.length){
-          // fallback: tenta capturar o body inteiro como 1 slide
-          slides = [doc.body];
-        }
-        if(slides.length>10) slides = slides.slice(0,10);
+  // Injeta CSS + slides do HTML gerado pelo Davi
+  // Extrai apenas o <style> e o <body> para evitar conflito com a página
+  const parser  = new DOMParser();
+  const doc     = parser.parseFromString(pl.slidesHtml, 'text/html');
 
-        const captured=[];
-        for(let i=0;i<slides.length;i++){
-          // Atualiza progress no modal de publicação
-          const pct=Math.round(((i)/slides.length)*100);
-          const bar=document.getElementById('ig-cap-bar');
-          const lbl=document.getElementById('ig-cap-label');
-          if(bar) bar.style.width=pct+'%';
-          if(lbl) lbl.textContent=`Capturando slide ${i+1} de ${slides.length}...`;
+  // Copia estilos do documento gerado
+  const styleEl = document.createElement('style');
+  styleEl.textContent = Array.from(doc.querySelectorAll('style'))
+    .map(s => s.textContent).join('\n');
+  container.appendChild(styleEl);
 
-          const canvas = await html2canvas(slides[i],{
-            width:540, height:540, scale:1,
-            backgroundColor:'#080c14',
-            logging:false, useCORS:true, allowTaint:true
-          });
-          captured.push(canvas.toDataURL('image/jpeg',0.92).split(',')[1]);
-        }
-
-        const bar=document.getElementById('ig-cap-bar');
-        if(bar) bar.style.width='100%';
-        document.body.removeChild(iframe);
-        resolve(captured);
-      }catch(err){
-        document.body.removeChild(iframe);
-        reject(err);
-      }
-    };
-    iframe.onerror=()=>{
-      document.body.removeChild(iframe);
-      reject(new Error('Falha ao carregar slides no iframe.'));
-    };
-    const blob=new Blob([pl.slidesHtml],{type:'text/html'});
-    iframe.src=URL.createObjectURL(blob);
+  // Copia links de fonte
+  Array.from(doc.querySelectorAll('link[rel="stylesheet"]')).forEach(link => {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = link.href;
+    container.appendChild(l);
   });
+
+  // Copia os slides
+  const bodyClone = doc.body.cloneNode(true);
+  container.appendChild(bodyClone);
+  document.body.appendChild(container);
+
+  // Aguarda fontes carregarem
+  try { await document.fonts.ready; } catch(e){}
+  await new Promise(r => setTimeout(r, 600));
+
+  let slides = Array.from(container.querySelectorAll('.slide'));
+  if(!slides.length) slides = Array.from(container.querySelectorAll('[class*="slide"]'));
+  if(!slides.length) throw new Error('Nenhum elemento .slide encontrado nos slides gerados.');
+  if(slides.length > 10) slides = slides.slice(0, 10);
+
+  const captured = [];
+  try {
+    for(let i = 0; i < slides.length; i++){
+      const pct = Math.round((i / slides.length) * 100);
+      const bar = document.getElementById('ig-cap-bar');
+      const lbl = document.getElementById('ig-cap-label');
+      if(bar) bar.style.width = pct + '%';
+      if(lbl) lbl.textContent = `Capturando slide ${i+1} de ${slides.length}...`;
+
+      const sl = slides[i];
+      const w  = sl.offsetWidth  || 540;
+      const h  = sl.offsetHeight || 675; // 4:5 ratio
+
+      const canvas = await html2canvas(sl, {
+        width: w, height: h, scale: 1,
+        backgroundColor: '#0A0F0A',
+        logging: false, useCORS: true, allowTaint: true,
+        foreignObjectRendering: false,
+        removeContainer: false
+      });
+      captured.push(canvas.toDataURL('image/jpeg', 0.92).split(',')[1]);
+    }
+  } finally {
+    document.body.removeChild(container);
+  }
+
+  const bar = document.getElementById('ig-cap-bar');
+  if(bar) bar.style.width = '100%';
+  return captured;
 }
 
 /* ══════════════════════════════════════════
