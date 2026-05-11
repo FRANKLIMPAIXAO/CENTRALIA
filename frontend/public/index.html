@@ -2150,39 +2150,93 @@ function renderBiaTriggers(){
   }
   el.innerHTML = biaTriggers.map(t => {
     const typeLabel = t.responseType==='fixed'
-      ? `<span style="color:var(--blue)">📝 Fixa</span>`
-      : `<span style="color:var(--green)">🤖 IA</span>`;
+      ? `<span style="color:var(--blue);font-size:10px">📝 Fixa</span>`
+      : `<span style="color:var(--green);font-size:10px">🤖 IA</span>`;
     const preview = t.responseType==='fixed'
-      ? `"${(t.fixedResponse||'').slice(0,60)}${t.fixedResponse?.length>60?'…':''}"`
-      : `instrução: ${(t.aiInstruction||'(padrão)').slice(0,50)}`;
+      ? `${(t.fixedResponse||'').slice(0,70)}${(t.fixedResponse||'').length>70?'…':''}`
+      : `IA: ${(t.aiInstruction||'(padrão)').slice(0,50)}`;
     const hits = t.hitCount || 0;
     const enabledColor = t.enabled ? 'var(--green)' : 'var(--text-muted)';
-    return `<div style="background:var(--bg-card);border:1px solid ${t.enabled?'var(--border)':'var(--border2)'};border-radius:10px;padding:12px 14px;margin-bottom:8px;opacity:${t.enabled?1:.6}">
-      <div style="display:flex;align-items:flex-start;gap:8px">
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-            <span style="font-size:12px;font-weight:700;color:${enabledColor}">${t.label||t.keywords?.[0]||'—'}</span>
-            ${typeLabel}
-            <span style="font-size:10px;color:var(--text-muted);background:var(--bg-input);border-radius:4px;padding:2px 6px">${hits} disparos</span>
+    return `<div id="trig-card-${t.id}" style="background:var(--bg-card);border:1px solid ${t.enabled?'var(--border)':'var(--border2)'};border-radius:10px;padding:12px 14px;margin-bottom:8px;opacity:${t.enabled?1:.6}">
+      <!-- VIEW MODE -->
+      <div id="trig-view-${t.id}">
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap">
+              <span style="font-size:12px;font-weight:700;color:${enabledColor}">${t.label||t.keywords?.[0]||'—'}</span>
+              ${typeLabel}
+              <span style="font-size:10px;color:var(--text-muted);background:var(--bg-input);border-radius:4px;padding:2px 6px">${hits} disparos</span>
+            </div>
+            <div style="font-size:11px;color:var(--yellow);margin-bottom:4px">🔑 ${(t.keywords||[]).join(', ')}</div>
+            <div style="font-size:12px;color:var(--text-sub);line-height:1.4">"${preview}"</div>
           </div>
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">
-            Palavras: <span style="color:var(--yellow)">${(t.keywords||[]).join(', ')}</span>
+          <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+            <button onclick="editTrigger('${t.id}')"
+                    style="font-size:10px;padding:4px 10px;background:var(--green-dim);border:1px solid var(--green-border);border-radius:5px;color:var(--green);cursor:pointer;font-weight:600">
+              ✏️ Editar
+            </button>
+            <button onclick="toggleTrigger('${t.id}',${!t.enabled})"
+                    style="font-size:10px;padding:4px 10px;background:none;border:1px solid var(--border);border-radius:5px;color:var(--text-sub);cursor:pointer">
+              ${t.enabled?'⏸ Pausar':'▶ Ativar'}
+            </button>
+            <button onclick="deleteTrigger('${t.id}')"
+                    style="font-size:10px;padding:4px 10px;background:none;border:1px solid #ef444440;border-radius:5px;color:#ef4444;cursor:pointer">
+              🗑 Excluir
+            </button>
           </div>
-          <div style="font-size:11px;color:var(--text-sub)">${preview}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
-          <button onclick="toggleTrigger('${t.id}',${!t.enabled})"
-                  style="font-size:10px;padding:3px 8px;background:none;border:1px solid var(--border);border-radius:5px;color:var(--text-sub);cursor:pointer">
-            ${t.enabled?'Pausar':'Ativar'}
-          </button>
-          <button onclick="deleteTrigger('${t.id}')"
-                  style="font-size:10px;padding:3px 8px;background:none;border:1px solid #ef444440;border-radius:5px;color:#ef4444;cursor:pointer">
-            Excluir
-          </button>
+      </div>
+      <!-- EDIT MODE (oculto por padrão) -->
+      <div id="trig-edit-${t.id}" style="display:none">
+        <div style="font-size:10px;color:var(--green);letter-spacing:1.5px;font-weight:700;margin-bottom:10px">✏️ EDITANDO: ${t.label||'gatilho'}</div>
+        <label class="ig-label">Nome</label>
+        <input id="edit-label-${t.id}" class="ig-input" value="${(t.label||'').replace(/"/g,'&quot;')}" style="margin-bottom:8px">
+        <label class="ig-label">Palavras-chave (separadas por vírgula)</label>
+        <input id="edit-kw-${t.id}" class="ig-input" value="${(t.keywords||[]).join(', ')}" style="margin-bottom:8px">
+        <label class="ig-label">Resposta ${t.responseType==='fixed'?'fixa':'(instrução IA)'}</label>
+        <textarea id="edit-resp-${t.id}" class="ig-input" rows="3" style="resize:vertical;margin-bottom:10px">${t.responseType==='fixed'?(t.fixedResponse||''):(t.aiInstruction||'')}</textarea>
+        <div style="display:flex;gap:8px">
+          <button onclick="saveTriggerEdit('${t.id}','${t.responseType}')" class="pl-btn pl-btn-primary" style="flex:1;font-size:12px;padding:8px">💾 Salvar</button>
+          <button onclick="cancelTriggerEdit('${t.id}')" class="pl-btn pl-btn-secondary" style="font-size:12px;padding:8px">Cancelar</button>
         </div>
+        <div id="edit-err-${t.id}" style="display:none;font-size:11px;color:var(--red);margin-top:6px"></div>
       </div>
     </div>`;
   }).join('');
+}
+
+function editTrigger(id){
+  document.getElementById(`trig-view-${id}`).style.display = 'none';
+  document.getElementById(`trig-edit-${id}`).style.display = 'block';
+  document.getElementById(`trig-card-${id}`).style.opacity = '1';
+}
+function cancelTriggerEdit(id){
+  document.getElementById(`trig-view-${id}`).style.display = 'block';
+  document.getElementById(`trig-edit-${id}`).style.display = 'none';
+}
+async function saveTriggerEdit(id, responseType){
+  const errEl = document.getElementById(`edit-err-${id}`);
+  errEl.style.display = 'none';
+  const label    = document.getElementById(`edit-label-${id}`)?.value.trim();
+  const rawKW    = document.getElementById(`edit-kw-${id}`)?.value.trim();
+  const respText = document.getElementById(`edit-resp-${id}`)?.value.trim();
+  if(!rawKW){ errEl.textContent='Informe as palavras-chave.'; errEl.style.display='block'; return; }
+  if(!respText){ errEl.textContent='Informe a resposta.'; errEl.style.display='block'; return; }
+  const keywords = rawKW.split(',').map(k=>k.trim()).filter(Boolean);
+  const body = {
+    label: label || keywords[0],
+    keywords,
+    [responseType==='fixed' ? 'fixedResponse' : 'aiInstruction']: respText
+  };
+  try {
+    const res = await fetch(`${API}/api/instagram/triggers/${id}`,{
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error||'Erro');
+    await loadBiaTriggers();
+  } catch(e){ errEl.textContent = e.message; errEl.style.display='block'; }
 }
 
 async function addTrigger(){
