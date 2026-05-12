@@ -25,19 +25,21 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const ig       = require('./instagram');
 const { fetchFullAnalytics } = require('./ig-analytics');
 const { parseFiscalXML, detectDocType, formatCurrency, formatPercent, crtLabel } = require('./modules/xml-parser');
+const usersModule = require('./users');
+usersModule.seedAdmin();
 
 const app      = express();
 
-/* ══ AUTH ══ */
-const crypto2 = require('crypto');
-function getAuthToken() {
-  if (!process.env.APP_PASSWORD) return null;
-  return crypto2.createHmac('sha256', 'centralia-2026').update(process.env.APP_PASSWORD).digest('hex');
-}
+/* ══ AUTH MULTI-USER ══ */
 function authMiddleware(req, res, next) {
-  if (!process.env.APP_PASSWORD) return next();
+  // Rotas públicas
+  if (req.path.startsWith('/auth')) return next();
+
   const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
-  if (token !== getAuthToken()) return res.status(401).json({ error: 'Não autorizado.' });
+  const user  = usersModule.verifyToken(token);
+  if (!user) return res.status(401).json({ error: 'Não autorizado. Faça login.' });
+
+  req.user = user; // disponível em todas as rotas
   next();
 }
 
@@ -69,21 +71,58 @@ app.use(express.static(path.join(__dirname, '../frontend/public'), {
 /* ══════════════════════════════════════════
    AUTH ROUTES
 ══════════════════════════════════════════ */
+
+// Login
 app.post('/api/auth/login', (req, res) => {
-  if (!process.env.APP_PASSWORD) return res.json({ ok: true, token: 'no-auth' });
-  if (req.body.password !== process.env.APP_PASSWORD) return res.status(401).json({ error: 'Senha incorreta.' });
-  res.json({ ok: true, token: getAuthToken() });
+  try {
+    const user  = usersModule.authenticate(req.body.email, req.body.password);
+    const token = usersModule.generateToken(user.id);
+    res.json({ ok: true, token, user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, plan: user.plan } });
+  } catch (e) {
+    res.status(401).json({ error: e.message });
+  }
 });
+
+// Check
 app.get('/api/auth/check', (req, res) => {
-  if (!process.env.APP_PASSWORD) return res.json({ ok: true, required: false });
   const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
-  res.json({ ok: token === getAuthToken(), required: true });
+  const user  = usersModule.verifyToken(token);
+  if (!user) return res.json({ ok: false, required: true });
+  res.json({ ok: true, required: true, user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin } });
 });
 
 // Protege todas as rotas abaixo com auth
-app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/auth')) return next();
-  authMiddleware(req, res, next);
+app.use('/api', authMiddleware);
+
+/* ══════════════════════════════════════════
+   ADMIN — Gestão de usuários
+══════════════════════════════════════════ */
+function adminOnly(req, res, next) {
+  if (!req.user?.isAdmin) return res.status(403).json({ error: 'Acesso restrito a administradores.' });
+  next();
+}
+
+app.get('/api/admin/users', adminOnly, (req, res) => {
+  res.json({ users: usersModule.getAllUsers() });
+});
+
+app.post('/api/admin/users', adminOnly, (req, res) => {
+  try {
+    const user = usersModule.createUser(req.body);
+    res.json({ ok: true, user });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+app.put('/api/admin/users/:id', adminOnly, (req, res) => {
+  try {
+    const user = usersModule.updateUser(req.params.id, req.body);
+    res.json({ ok: true, user });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+app.delete('/api/admin/users/:id', adminOnly, (req, res) => {
+  usersModule.deleteUser(req.params.id);
+  res.json({ ok: true });
 });
 
 /* ══════════════════════════════════════════
@@ -729,7 +768,7 @@ app.post('/api/chat', async (req, res) => {
 ══════════════════════════════════════════ */
 // GET /api/instagram/diagnose — descobre o Instagram Business Account ID correto
 app.get('/api/instagram/diagnose', async (req, res) => {
-  const cfg = ig.readConfig();
+  const cfg = ig.readConfig(undefined, req.user.id);
   if (!cfg.accessToken) return res.status(400).json({ error: 'Token não configurado.' });
 
   const token      = cfg.accessToken;
@@ -819,7 +858,7 @@ app.get('/api/instagram/diagnose', async (req, res) => {
 });
 
 app.get('/api/instagram/config', (req, res) => {
-  const cfg = ig.readConfig();
+  const cfg = ig.readConfig(undefined, req.user.id);
   // Nunca retorna o token/secret completos — apenas indica se estão configurados
   res.json({
     igUserId      : cfg.igUserId || '',
@@ -833,7 +872,7 @@ app.get('/api/instagram/config', (req, res) => {
 
 app.post('/api/instagram/config', (req, res) => {
   const { accessToken, igUserId, appId, appSecret, imgbbApiKey } = req.body;
-  const existing = ig.readConfig();
+  const existing = ig.readConfig(undefined, req.user.id);
   const merged   = {
     accessToken   : accessToken   || existing.accessToken   || '',
     igUserId      : igUserId      || existing.igUserId      || '',
@@ -845,7 +884,7 @@ app.post('/api/instagram/config', (req, res) => {
   if (!merged.accessToken || !merged.igUserId || !merged.imgbbApiKey) {
     return res.status(400).json({ error: 'Access Token, Instagram User ID e Imgbb API Key são obrigatórios.' });
   }
-  ig.writeConfig(merged);
+  ig.writeConfig(merged, req.user.id);
   res.json({ ok: true });
 });
 
@@ -862,7 +901,7 @@ app.post('/api/instagram/publish', async (req, res) => {
     return res.status(400).json({ error: 'Máximo 10 slides por carrossel.' });
   }
 
-  const cfg = ig.readConfig();
+  const cfg = ig.readConfig(undefined, req.user.id);
   if (!cfg.accessToken || !cfg.igUserId || !cfg.imgbbApiKey) {
     return res.status(400).json({ error: 'Instagram não configurado. Acesse ⚙️ Configurar Instagram.' });
   }
@@ -901,7 +940,7 @@ app.post('/api/instagram/schedule', (req, res) => {
     return res.status(400).json({ error: 'Horário deve ser pelo menos 5 minutos no futuro.' });
   }
 
-  const cfg = ig.readConfig();
+  const cfg = ig.readConfig(undefined, req.user.id);
   if (!cfg.accessToken || !cfg.igUserId || !cfg.imgbbApiKey) {
     return res.status(400).json({ error: 'Instagram não configurado. Acesse ⚙️ Configurar Instagram.' });
   }
@@ -1226,7 +1265,7 @@ app.post('/webhook/instagram', async (req, res) => {
 ══════════════════════════════════════════ */
 app.get('/api/instagram/analytics', async (req, res) => {
   try {
-    const cfg = ig.readConfig();
+    const cfg = ig.readConfig(undefined, req.user.id);
     if (!cfg.accessToken || !cfg.igUserId)
       return res.status(400).json({ error: 'Instagram não configurado. Configure o token em ⚙️ Configurar.' });
     const data = await fetchFullAnalytics(cfg.igUserId, cfg.accessToken, claude);
@@ -1243,22 +1282,22 @@ app.get('/api/instagram/analytics', async (req, res) => {
 
 // GET  /api/instagram/autoresponder — lê config
 app.get('/api/instagram/autoresponder', (req, res) => {
-  res.json(ig.readAutoResponderConfig());
+  res.json(ig.readAutoResponderConfig(req.user.id));
 });
 
 // POST /api/instagram/autoresponder — salva config (sem reiniciar)
 app.post('/api/instagram/autoresponder', (req, res) => {
-  const existing = ig.readAutoResponderConfig();
+  const existing = ig.readAutoResponderConfig(req.user.id);
   const merged   = { ...existing, ...req.body };
-  ig.writeAutoResponderConfig(merged);
+  ig.writeAutoResponderConfig(merged, req.user.id);
   res.json({ ok: true });
 });
 
 // POST /api/instagram/autoresponder/toggle — liga/desliga
 app.post('/api/instagram/autoresponder/toggle', (req, res) => {
-  const cfg = ig.readAutoResponderConfig();
+  const cfg = ig.readAutoResponderConfig(req.user.id);
   cfg.enabled = !cfg.enabled;
-  ig.writeAutoResponderConfig(cfg);
+  ig.writeAutoResponderConfig(cfg, req.user.id);
   if (cfg.enabled) {
     ig.startAutoResponder(claude);
   } else {
@@ -1269,13 +1308,13 @@ app.post('/api/instagram/autoresponder/toggle', (req, res) => {
 
 // GET /api/instagram/autoresponder/log — histórico de respostas
 app.get('/api/instagram/autoresponder/log', (req, res) => {
-  res.json({ log: ig.readArLog() });
+  res.json({ log: ig.readArLog(req.user.id) });
 });
 
 // GET /api/instagram/posts — lista posts recentes
 app.get('/api/instagram/posts', async (req, res) => {
   try {
-    const cfg = ig.readConfig();
+    const cfg = ig.readConfig(undefined, req.user.id);
     if (!cfg.accessToken) return res.status(400).json({ error: 'Instagram não configurado.' });
     const posts = await ig.fetchRecentPosts(cfg.igUserId, cfg.accessToken);
     res.json(posts);
@@ -1287,7 +1326,7 @@ app.get('/api/instagram/posts', async (req, res) => {
 // GET /api/instagram/comments/:mediaId — lista comentários de um post
 app.get('/api/instagram/comments/:mediaId', async (req, res) => {
   try {
-    const cfg = ig.readConfig();
+    const cfg = ig.readConfig(undefined, req.user.id);
     if (!cfg.accessToken) return res.status(400).json({ error: 'Instagram não configurado.' });
     const comments = await ig.fetchComments(req.params.mediaId, cfg.accessToken);
     res.json(comments);
@@ -1302,7 +1341,7 @@ app.get('/api/instagram/comments/:mediaId', async (req, res) => {
 
 // GET /api/instagram/triggers
 app.get('/api/instagram/triggers', (req, res) => {
-  res.json({ triggers: ig.readTriggers() });
+  res.json({ triggers: ig.readTriggers(req.user.id) });
 });
 
 // POST /api/instagram/triggers — criar novo gatilho
@@ -1311,7 +1350,7 @@ app.post('/api/instagram/triggers', (req, res) => {
   if (!keywords || !keywords.length) return res.status(400).json({ error: 'Informe ao menos uma palavra-chave.' });
   if (responseType === 'fixed' && !fixedResponse) return res.status(400).json({ error: 'Informe a resposta fixa.' });
 
-  const triggers = ig.readTriggers();
+  const triggers = ig.readTriggers(req.user.id);
   const trigger  = {
     id          : crypto.randomUUID(),
     label       : label || keywords[0],
@@ -1324,27 +1363,27 @@ app.post('/api/instagram/triggers', (req, res) => {
     createdAt   : new Date().toISOString()
   };
   triggers.push(trigger);
-  ig.writeTriggers(triggers);
+  ig.writeTriggers(triggers, req.user.id);
   res.json({ ok: true, trigger });
 });
 
 // PUT /api/instagram/triggers/:id — atualizar
 app.put('/api/instagram/triggers/:id', (req, res) => {
-  const triggers = ig.readTriggers();
+  const triggers = ig.readTriggers(req.user.id);
   const idx = triggers.findIndex(t => t.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Gatilho não encontrado.' });
   triggers[idx] = { ...triggers[idx], ...req.body, id: req.params.id };
-  ig.writeTriggers(triggers);
+  ig.writeTriggers(triggers, req.user.id);
   res.json({ ok: true, trigger: triggers[idx] });
 });
 
 // DELETE /api/instagram/triggers/:id
 app.delete('/api/instagram/triggers/:id', (req, res) => {
-  const triggers = ig.readTriggers();
+  const triggers = ig.readTriggers(req.user.id);
   const idx = triggers.findIndex(t => t.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'Gatilho não encontrado.' });
   triggers.splice(idx, 1);
-  ig.writeTriggers(triggers);
+  ig.writeTriggers(triggers, req.user.id);
   res.json({ ok: true });
 });
 

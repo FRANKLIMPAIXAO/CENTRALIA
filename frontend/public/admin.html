@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Centralia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--green:#00D4A0;--bg:#080c14;--bg-card:#0e1520;--bg-input:#0f1824;--text:#e8edf8;--text-sub:#7e8cb0;--text-muted:#3a4468;--border:#1e2840;--red:#ff5c72;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(#ffffff04 1px,transparent 1px),linear-gradient(90deg,#ffffff04 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+.topbar{position:sticky;top:0;z-index:100;background:rgba(8,12,20,.95);border-bottom:1px solid var(--border);backdrop-filter:blur(20px);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;}
+.container{max-width:900px;margin:0 auto;padding:32px 24px;position:relative;z-index:1;}
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;}
+.section-label{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:3px;text-transform:uppercase;margin:24px 0 14px;display:flex;align-items:center;gap:12px;}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.ig-input{width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:13px;outline:none;transition:.2s;box-sizing:border-box;}
+.ig-input:focus{border-color:var(--green);}
+.btn-primary{background:var(--green);border:none;border-radius:10px;padding:10px 20px;color:#000;font-weight:700;font-size:13px;cursor:pointer;}
+.btn-sec{background:transparent;border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:var(--text-sub);font-size:12px;cursor:pointer;}
+.btn-danger{background:transparent;border:1px solid #ef444440;border-radius:8px;padding:6px 12px;color:#ef4444;font-size:11px;cursor:pointer;}
+table{width:100%;border-collapse:collapse;}
+th{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:2px;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;}
+.badge-active{background:var(--green);color:#000;opacity:.2;}
+.badge.on{background:#00C89620;color:var(--green);border:1px solid #00C89640;}
+.badge.off{background:#ef444415;color:#ef4444;border:1px solid #ef444430;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:16px">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--green)">CENTRAL IA</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);letter-spacing:2px">// ADMIN</span>
+  </div>
+  <div style="display:flex;gap:10px">
+    <a href="/" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px">← App</a>
+    <button onclick="logout()" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;cursor:pointer">Sair</button>
+  </div>
+</div>
+<div class="container">
+  <div id="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:24px"></div>
+
+  <div class="section-label">+ Adicionar cliente</div>
+  <div class="card">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
+      <div><label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:6px">Nome</label><input id="new-name" class="ig-input" placeholder="João Silva"></div>
+      <div><label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:6px">Email</label><input id="new-email" class="ig-input" placeholder="joao@escritorio.com"></div>
+      <div><label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:6px">Senha</label><input id="new-pass" class="ig-input" type="password" placeholder="senha123"></div>
+      <button class="btn-primary" onclick="addUser()">+ Adicionar</button>
+    </div>
+    <div id="add-error" style="display:none;font-size:11px;color:var(--red);margin-top:8px"></div>
+  </div>
+
+  <div class="section-label">Clientes ativos</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table>
+      <thead><tr><th>Nome</th><th>Email</th><th>Status</th><th>Criado em</th><th>Último login</th><th></th></tr></thead>
+      <tbody id="users-table"><tr><td colspan="6" style="color:var(--text-muted);text-align:center;padding:20px">Carregando...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+<script>
+const token = localStorage.getItem('cia_token') || '';
+
+async function api(path, opts={}) {
+  const res = await fetch(path, { ...opts, headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token, ...(opts.headers||{}) } });
+  return res.json();
+}
+
+async function loadUsers() {
+  const data = await api('/api/admin/users');
+  const users = (data.users || []).filter(u => !u.isAdmin);
+
+  // Stats
+  document.getElementById('stats-grid').innerHTML = [
+    { label:'Total clientes', val: users.length },
+    { label:'Ativos', val: users.filter(u=>u.active).length },
+    { label:'Inativos', val: users.filter(u=>!u.active).length },
+    { label:'Receita est.', val: 'R$ '+(users.filter(u=>u.active).length*97.9).toFixed(0) }
+  ].map(s=>`<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-muted);letter-spacing:2px;margin-bottom:8px">${s.label.toUpperCase()}</div>
+    <div style="font-size:24px;font-weight:700;color:var(--green)">${s.val}</div>
+  </div>`).join('');
+
+  // Table
+  document.getElementById('users-table').innerHTML = users.length
+    ? users.map(u => `<tr>
+        <td style="font-weight:600">${u.name}</td>
+        <td style="color:var(--text-sub)">${u.email}</td>
+        <td><span class="badge ${u.active?'on':'off'}">${u.active?'Ativo':'Inativo'}</span></td>
+        <td style="color:var(--text-muted);font-size:11px">${new Date(u.createdAt).toLocaleDateString('pt-BR')}</td>
+        <td style="color:var(--text-muted);font-size:11px">${u.lastLoginAt?new Date(u.lastLoginAt).toLocaleDateString('pt-BR'):'nunca'}</td>
+        <td style="display:flex;gap:6px">
+          <button class="btn-sec" onclick="toggleUser('${u.id}',${!u.active})">${u.active?'Suspender':'Ativar'}</button>
+          <button class="btn-sec" onclick="resetPass('${u.id}')">🔑 Senha</button>
+          <button class="btn-danger" onclick="removeUser('${u.id}','${u.name}')">🗑</button>
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" style="color:var(--text-muted);text-align:center;padding:20px">Nenhum cliente ainda.</td></tr>';
+}
+
+async function addUser() {
+  const name  = document.getElementById('new-name').value.trim();
+  const email = document.getElementById('new-email').value.trim();
+  const pass  = document.getElementById('new-pass').value.trim();
+  const errEl = document.getElementById('add-error');
+  errEl.style.display='none';
+  if(!email||!pass){ errEl.textContent='Email e senha obrigatórios.'; errEl.style.display='block'; return; }
+  const data = await api('/api/admin/users', { method:'POST', body: JSON.stringify({name,email,password:pass}) });
+  if(!data.ok){ errEl.textContent=data.error; errEl.style.display='block'; return; }
+  ['new-name','new-email','new-pass'].forEach(id=>document.getElementById(id).value='');
+  loadUsers();
+}
+
+async function toggleUser(id, active) {
+  await api(`/api/admin/users/${id}`, { method:'PUT', body: JSON.stringify({active}) });
+  loadUsers();
+}
+
+async function resetPass(id) {
+  const newPass = prompt('Nova senha:');
+  if(!newPass) return;
+  await api(`/api/admin/users/${id}`, { method:'PUT', body: JSON.stringify({password:newPass}) });
+  alert('Senha alterada!');
+}
+
+async function removeUser(id, name) {
+  if(!confirm(`Remover cliente "${name}"? Todos os dados serão perdidos.`)) return;
+  await api(`/api/admin/users/${id}`, { method:'DELETE' });
+  loadUsers();
+}
+
+function logout() { localStorage.removeItem('cia_token'); window.location.href='/'; }
+
+// Verifica acesso admin
+(async()=>{
+  const data = await api('/api/auth/check');
+  if(!data.ok || !data.user?.isAdmin) { window.location.href='/'; return; }
+  loadUsers();
+})();
+</script>
+</body>
+</html>

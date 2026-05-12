@@ -9,6 +9,9 @@ backend/replied-comments.json
 backend/autoresponder-log.json
 backend/triggers.json
 
+# backend/data/ NÃO é ignorado — precisa existir no container Docker
+# O diretório é criado pelo Dockerfile: RUN mkdir -p /app/backend/data
+
 # Node
 backend/node_modules/
 frontend/node_modules/

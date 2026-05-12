@@ -3,6 +3,7 @@
 const fs   = require('fs');
 const path = require('path');
 const cron = require('node-cron');
+const usersModule = require('./users');
 
 const CONFIG_PATH    = path.join(__dirname, 'instagram-config.json');
 const SCHEDULED_PATH = path.join(__dirname, 'scheduled.json');
@@ -21,10 +22,16 @@ function getGraphBase(accessToken) {
 /* ══════════════════════════════════════════
    CONFIG HELPERS
 ══════════════════════════════════════════ */
-// readConfig(profile) — suporta 'franklim' (padrão) e 'pac' (conta separada)
-function readConfig(profile) {
+// readConfig(profile, userId) — suporta 'franklim' (padrão) e 'pac' (conta separada)
+// userId opcional: se fornecido, lê do diretório isolado do usuário
+function readConfig(profile, userId) {
   let file = {};
-  try { file = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')); } catch {}
+  try {
+    const filePath = userId
+      ? usersModule.getUserFilePath(userId, 'instagram-config.json')
+      : CONFIG_PATH;
+    file = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {}
 
   if (profile === 'pac') {
     // Conta PAC usa variáveis PAC_IG_* — nunca mistura com Franklim
@@ -49,8 +56,11 @@ function readConfig(profile) {
   };
 }
 
-function writeConfig(obj) {
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(obj, null, 2), 'utf8');
+function writeConfig(obj, userId) {
+  const filePath = userId
+    ? usersModule.getUserFilePath(userId, 'instagram-config.json')
+    : CONFIG_PATH;
+  fs.writeFileSync(filePath, JSON.stringify(obj, null, 2), 'utf8');
 }
 
 function readScheduled() {
@@ -321,9 +331,14 @@ const AUTORESPONDER_PATH = path.join(__dirname, 'autoresponder-config.json');
 const REPLIED_PATH       = path.join(__dirname, 'replied-comments.json');
 const AR_LOG_PATH        = path.join(__dirname, 'autoresponder-log.json');
 
-function readAutoResponderConfig() {
+function readAutoResponderConfig(userId) {
   let file = {};
-  try { file = JSON.parse(fs.readFileSync(AUTORESPONDER_PATH, 'utf8')); } catch {}
+  try {
+    const filePath = userId
+      ? usersModule.getUserFilePath(userId, 'autoresponder-config.json')
+      : AUTORESPONDER_PATH;
+    file = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {}
   // Env vars como fallback — permite persistência no Railway sem arquivo
   return {
     enabled           : file.enabled            ?? (process.env.AR_ENABLED === 'true'),
@@ -334,25 +349,42 @@ function readAutoResponderConfig() {
     respondToAll      : file.respondToAll       ?? (process.env.AR_RESPOND_ALL === 'true')
   };
 }
-function writeAutoResponderConfig(obj) {
-  fs.writeFileSync(AUTORESPONDER_PATH, JSON.stringify(obj, null, 2), 'utf8');
+function writeAutoResponderConfig(obj, userId) {
+  const filePath = userId
+    ? usersModule.getUserFilePath(userId, 'autoresponder-config.json')
+    : AUTORESPONDER_PATH;
+  fs.writeFileSync(filePath, JSON.stringify(obj, null, 2), 'utf8');
 }
-function readReplied() {
-  try { return new Set(JSON.parse(fs.readFileSync(REPLIED_PATH, 'utf8'))); }
-  catch { return new Set(); }
+function readReplied(userId) {
+  try {
+    const filePath = userId
+      ? usersModule.getUserFilePath(userId, 'replied-comments.json')
+      : REPLIED_PATH;
+    return new Set(JSON.parse(fs.readFileSync(filePath, 'utf8')));
+  } catch { return new Set(); }
 }
-function writeReplied(set) {
-  fs.writeFileSync(REPLIED_PATH, JSON.stringify([...set]), 'utf8');
+function writeReplied(set, userId) {
+  const filePath = userId
+    ? usersModule.getUserFilePath(userId, 'replied-comments.json')
+    : REPLIED_PATH;
+  fs.writeFileSync(filePath, JSON.stringify([...set]), 'utf8');
 }
-function readArLog() {
-  try { return JSON.parse(fs.readFileSync(AR_LOG_PATH, 'utf8')); }
-  catch { return []; }
+function readArLog(userId) {
+  try {
+    const filePath = userId
+      ? usersModule.getUserFilePath(userId, 'ar-log.json')
+      : AR_LOG_PATH;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch { return []; }
 }
-function appendArLog(entry) {
-  const log = readArLog();
+function appendArLog(entry, userId) {
+  const log = readArLog(userId);
   log.unshift(entry); // mais recente primeiro
   if (log.length > 100) log.length = 100; // máx 100 entradas
-  fs.writeFileSync(AR_LOG_PATH, JSON.stringify(log, null, 2), 'utf8');
+  const filePath = userId
+    ? usersModule.getUserFilePath(userId, 'ar-log.json')
+    : AR_LOG_PATH;
+  fs.writeFileSync(filePath, JSON.stringify(log, null, 2), 'utf8');
 }
 
 async function fetchRecentPosts(igUserId, accessToken) {
@@ -455,16 +487,22 @@ const DEFAULT_TRIGGERS = [
   { id:'default-6', label:'Elogio / Parabéns',          keywords:['parabéns','incrível','excelente','show','demais','top','muito bom','ótimo','perfeito','manda bem'], responseType:'fixed', fixedResponse:'Valeu! 🙏 Fico feliz que tenha gostado, continua acompanhando!', enabled:true, hitCount:0 }
 ];
 
-function readTriggers() {
+function readTriggers(userId) {
   try {
-    const arr = JSON.parse(fs.readFileSync(TRIGGERS_PATH, 'utf8'));
+    const filePath = userId
+      ? usersModule.getUserFilePath(userId, 'triggers.json')
+      : TRIGGERS_PATH;
+    const arr = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     if (arr && arr.length > 0) return arr;
   } catch {}
   // Arquivo vazio ou inexistente (Railway restart) → usa padrões embutidos
   return DEFAULT_TRIGGERS;
 }
-function writeTriggers(arr) {
-  fs.writeFileSync(TRIGGERS_PATH, JSON.stringify(arr, null, 2), 'utf8');
+function writeTriggers(arr, userId) {
+  const filePath = userId
+    ? usersModule.getUserFilePath(userId, 'triggers.json')
+    : TRIGGERS_PATH;
+  fs.writeFileSync(filePath, JSON.stringify(arr, null, 2), 'utf8');
 }
 
 function matchTrigger(commentText, triggers) {
