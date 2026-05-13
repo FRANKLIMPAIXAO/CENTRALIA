@@ -1378,8 +1378,9 @@ async function captureSlides(){
     console.warn('render-slides falhou, tentando html2canvas...', e.message);
   }
 
-  // ── TENTATIVA 2: html2canvas (desktop) ──
-  if(lbl) lbl.textContent = 'Capturando slides no navegador...';
+  // ── TENTATIVA 2: html2canvas com fontes seguras ──
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(lbl) lbl.textContent = isIOS ? 'Preparando para iOS...' : 'Capturando slides...';
   if(bar) bar.style.width = '10%';
 
   const container = document.createElement('div');
@@ -1388,20 +1389,33 @@ async function captureSlides(){
   const parser  = new DOMParser();
   const doc     = parser.parseFromString(pl.slidesHtml, 'text/html');
 
+  // CSS dos slides — no iOS substitui fontes externas por fontes do sistema
+  let cssText = Array.from(doc.querySelectorAll('style')).map(s=>s.textContent).join('\n');
+  if(isIOS){
+    // Remove @import de fontes externas (causa "The operation is insecure" no iOS)
+    cssText = cssText
+      .replace(/@import\s+url\([^)]+\)[^;]*;/gi, '')
+      .replace(/font-family\s*:\s*['"]?Archivo[^;]+;/gi, "font-family: -apple-system, 'SF Pro Display', Arial Black, sans-serif;")
+      .replace(/font-family\s*:\s*['"]?Manrope[^;]+;/gi, "font-family: -apple-system, 'SF Pro Text', Helvetica Neue, sans-serif;")
+      .replace(/font-family\s*:\s*['"]?Lora[^;]+;/gi, "font-family: Georgia, 'Times New Roman', serif;");
+  }
   const styleEl = document.createElement('style');
-  styleEl.textContent = Array.from(doc.querySelectorAll('style')).map(s=>s.textContent).join('\n');
+  styleEl.textContent = cssText;
   container.appendChild(styleEl);
 
-  Array.from(doc.querySelectorAll('link[rel="stylesheet"]')).forEach(link => {
-    const l = document.createElement('link'); l.rel='stylesheet'; l.href=link.href;
-    container.appendChild(l);
-  });
+  // No iOS NÃO adiciona links externos — evita canvas taint
+  if(!isIOS){
+    Array.from(doc.querySelectorAll('link[rel="stylesheet"]')).forEach(link => {
+      const l = document.createElement('link'); l.rel='stylesheet'; l.href=link.href;
+      container.appendChild(l);
+    });
+  }
 
   container.appendChild(doc.body.cloneNode(true));
   document.body.appendChild(container);
 
-  try { await document.fonts.ready; } catch(e){}
-  await new Promise(r => setTimeout(r, 800));
+  if(!isIOS){ try { await document.fonts.ready; } catch(e){} }
+  await new Promise(r => setTimeout(r, isIOS ? 300 : 800));
 
   let slides = Array.from(container.querySelectorAll('.slide'));
   if(!slides.length) slides = Array.from(container.querySelectorAll('[class*="slide"]'));
@@ -1417,7 +1431,18 @@ async function captureSlides(){
       const canvas = await html2canvas(sl,{
         width: sl.offsetWidth||540, height: sl.offsetHeight||675,
         scale:1, backgroundColor:'#0A0F0A',
-        logging:false, useCORS:true, allowTaint:true, foreignObjectRendering:false
+        logging:false,
+        useCORS: !isIOS,   // iOS: sem CORS (evita taint)
+        allowTaint: isIOS,  // iOS: permite taint mas não chama toDataURL em canvas sujo
+        foreignObjectRendering:false,
+        imageTimeout: 0,
+        onclone: (clonedDoc) => {
+          // iOS: remove qualquer recurso externo remanescente no clone
+          if(isIOS){
+            clonedDoc.querySelectorAll('link[rel="stylesheet"]').forEach(l=>l.remove());
+            clonedDoc.querySelectorAll('img[src^="http"]').forEach(img=>img.remove());
+          }
+        }
       });
       captured.push(canvas.toDataURL('image/jpeg',0.92).split(',')[1]);
     }
