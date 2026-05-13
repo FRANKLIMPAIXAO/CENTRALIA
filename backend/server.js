@@ -32,17 +32,11 @@ usersModule.seedAdmin();
 let puppeteerBrowser = null;
 async function getPuppeteerBrowser() {
   if (puppeteerBrowser) return puppeteerBrowser;
-  const puppeteer = require('puppeteer-core');
-  // Tenta chromium local (Docker/EasyPanel) ou macOS
-  const executablePath =
-    process.env.PUPPETEER_EXECUTABLE_PATH ||
-    '/usr/bin/chromium-browser' ||
-    '/usr/bin/chromium' ||
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  // puppeteer (completo) traz Chromium embutido — funciona sem instalação no sistema
+  const puppeteer = require('puppeteer');
   puppeteerBrowser = await puppeteer.launch({
-    executablePath,
-    headless: true,
-    args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu']
+    headless: 'new',
+    args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--disable-web-security']
   });
   return puppeteerBrowser;
 }
