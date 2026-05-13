@@ -1347,78 +1347,84 @@ async function saveIgSettings(){
 
 /* ══════════════════════════════════════════
    INSTAGRAM — CAPTURA DE SLIDES
+   Estratégia: servidor (Puppeteer) → fallback html2canvas
 ══════════════════════════════════════════ */
 async function captureSlides(){
   if(!pl.slidesHtml) throw new Error('Nenhum slide disponível.');
 
-  // Cria container oculto DIRETO na página (evita iframe — bloqueado pelo iOS Safari)
-  const container = document.createElement('div');
-  container.style.cssText = [
-    'position:fixed','left:-9999px','top:0',
-    'width:540px','height:auto',
-    'z-index:-1','pointer-events:none',
-    'background:#0A0F0A','overflow:visible'
-  ].join(';');
+  const lbl = document.getElementById('ig-cap-label');
+  const bar = document.getElementById('ig-cap-bar');
 
-  // Injeta CSS + slides do HTML gerado pelo Davi
-  // Extrai apenas o <style> e o <body> para evitar conflito com a página
+  // ── TENTATIVA 1: renderização no servidor (funciona em iOS/Android) ──
+  try {
+    if(lbl) lbl.textContent = 'Processando slides no servidor...';
+    if(bar) bar.style.width = '30%';
+
+    const res  = await fetch(`${API}/api/render-slides`, {
+      method : 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body   : JSON.stringify({ html: pl.slidesHtml })
+    });
+    const data = await res.json();
+
+    if(res.ok && data.images && data.images.length >= 2) {
+      if(bar) bar.style.width = '100%';
+      if(lbl) lbl.textContent = `${data.images.length} slides capturados ✓`;
+      return data.images;
+    }
+    // Se servidor retornou mas sem slides suficientes, cai no fallback
+    console.warn('render-slides: resposta insuficiente, tentando fallback...');
+  } catch(e) {
+    console.warn('render-slides falhou, tentando html2canvas...', e.message);
+  }
+
+  // ── TENTATIVA 2: html2canvas (desktop) ──
+  if(lbl) lbl.textContent = 'Capturando slides no navegador...';
+  if(bar) bar.style.width = '10%';
+
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:540px;height:auto;z-index:-1;pointer-events:none;background:#0A0F0A;overflow:visible';
+
   const parser  = new DOMParser();
   const doc     = parser.parseFromString(pl.slidesHtml, 'text/html');
 
-  // Copia estilos do documento gerado
   const styleEl = document.createElement('style');
-  styleEl.textContent = Array.from(doc.querySelectorAll('style'))
-    .map(s => s.textContent).join('\n');
+  styleEl.textContent = Array.from(doc.querySelectorAll('style')).map(s=>s.textContent).join('\n');
   container.appendChild(styleEl);
 
-  // Copia links de fonte
   Array.from(doc.querySelectorAll('link[rel="stylesheet"]')).forEach(link => {
-    const l = document.createElement('link');
-    l.rel = 'stylesheet'; l.href = link.href;
+    const l = document.createElement('link'); l.rel='stylesheet'; l.href=link.href;
     container.appendChild(l);
   });
 
-  // Copia os slides
-  const bodyClone = doc.body.cloneNode(true);
-  container.appendChild(bodyClone);
+  container.appendChild(doc.body.cloneNode(true));
   document.body.appendChild(container);
 
-  // Aguarda fontes carregarem
   try { await document.fonts.ready; } catch(e){}
-  await new Promise(r => setTimeout(r, 600));
+  await new Promise(r => setTimeout(r, 800));
 
   let slides = Array.from(container.querySelectorAll('.slide'));
   if(!slides.length) slides = Array.from(container.querySelectorAll('[class*="slide"]'));
-  if(!slides.length) throw new Error('Nenhum elemento .slide encontrado nos slides gerados.');
-  if(slides.length > 10) slides = slides.slice(0, 10);
+  if(!slides.length){ document.body.removeChild(container); throw new Error('Nenhum slide encontrado. Tente gerar os slides novamente.'); }
+  if(slides.length > 10) slides = slides.slice(0,10);
 
   const captured = [];
   try {
-    for(let i = 0; i < slides.length; i++){
-      const pct = Math.round((i / slides.length) * 100);
-      const bar = document.getElementById('ig-cap-bar');
-      const lbl = document.getElementById('ig-cap-label');
-      if(bar) bar.style.width = pct + '%';
+    for(let i=0; i<slides.length; i++){
+      if(bar) bar.style.width = Math.round((i/slides.length)*100)+'%';
       if(lbl) lbl.textContent = `Capturando slide ${i+1} de ${slides.length}...`;
-
       const sl = slides[i];
-      const w  = sl.offsetWidth  || 540;
-      const h  = sl.offsetHeight || 675; // 4:5 ratio
-
-      const canvas = await html2canvas(sl, {
-        width: w, height: h, scale: 1,
-        backgroundColor: '#0A0F0A',
-        logging: false, useCORS: true, allowTaint: true,
-        foreignObjectRendering: false,
-        removeContainer: false
+      const canvas = await html2canvas(sl,{
+        width: sl.offsetWidth||540, height: sl.offsetHeight||675,
+        scale:1, backgroundColor:'#0A0F0A',
+        logging:false, useCORS:true, allowTaint:true, foreignObjectRendering:false
       });
-      captured.push(canvas.toDataURL('image/jpeg', 0.92).split(',')[1]);
+      captured.push(canvas.toDataURL('image/jpeg',0.92).split(',')[1]);
     }
   } finally {
     document.body.removeChild(container);
   }
 
-  const bar = document.getElementById('ig-cap-bar');
   if(bar) bar.style.width = '100%';
   return captured;
 }

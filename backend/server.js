@@ -28,6 +28,56 @@ const { parseFiscalXML, detectDocType, formatCurrency, formatPercent, crtLabel }
 const usersModule = require('./users');
 usersModule.seedAdmin();
 
+/* ══ PUPPETEER — renderização server-side de slides ══ */
+let puppeteerBrowser = null;
+async function getPuppeteerBrowser() {
+  if (puppeteerBrowser) return puppeteerBrowser;
+  const puppeteer = require('puppeteer-core');
+  // Tenta chromium local (Docker/EasyPanel) ou macOS
+  const executablePath =
+    process.env.PUPPETEER_EXECUTABLE_PATH ||
+    '/usr/bin/chromium-browser' ||
+    '/usr/bin/chromium' ||
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  puppeteerBrowser = await puppeteer.launch({
+    executablePath,
+    headless: true,
+    args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu']
+  });
+  return puppeteerBrowser;
+}
+
+app.post('/api/render-slides', async (req, res) => {
+  const { html } = req.body;
+  if (!html) return res.status(400).json({ error: 'HTML não fornecido.' });
+  let page;
+  try {
+    const browser = await getPuppeteerBrowser();
+    page = await browser.newPage();
+    await page.setViewport({ width: 600, height: 900 });
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 15000 });
+    await page.waitForTimeout(500);
+
+    const slides = await page.$$('.slide');
+    if (!slides.length) return res.status(400).json({ error: 'Nenhum .slide encontrado no HTML.' });
+
+    const images = [];
+    for (const slide of slides.slice(0, 10)) {
+      const box = await slide.boundingBox();
+      if (!box) continue;
+      const buffer = await slide.screenshot({ type: 'jpeg', quality: 92 });
+      images.push(buffer.toString('base64'));
+    }
+    res.json({ ok: true, images });
+  } catch (err) {
+    console.error('render-slides erro:', err.message);
+    // Fallback: retorna erro para o cliente tentar html2canvas
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (page) await page.close().catch(()=>{});
+  }
+});
+
 const app      = express();
 
 /* ══ AUTH MULTI-USER ══ */
