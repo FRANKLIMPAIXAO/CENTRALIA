@@ -1298,20 +1298,56 @@ app.post('/webhook/instagram', async (req, res) => {
 app.post('/api/render-slides', async (req, res) => {
   const { html } = req.body;
   if (!html) return res.status(400).json({ error: 'HTML não fornecido.' });
+
+  // Extrai HTML isolado de cada slide server-side
+  const cheerio = (() => { try { return require('cheerio'); } catch { return null; } })();
+
   let page;
   try {
     const browser = await getPuppeteerBrowser();
+    const images  = [];
+
+    // Parseamento leve: extrai slides do HTML usando regex simples
+    // Pega o CSS global
+    const cssMatch  = html.match(/<style[^>]*>([\s\S]*?)<\/style>/gi) || [];
+    const cssText   = cssMatch.map(m => m.replace(/<\/?style[^>]*>/gi,'')).join('\n');
+    const fontLinks = (html.match(/<link[^>]+stylesheet[^>]+>/gi)||[]).join('\n');
+
+    // Extrai cada <div class="slide">...</div>
+    const slideRegex = /<div[^>]+class="[^"]*slide[^"]*"[^>]*>([\s\S]*?)<\/div>\s*(?=<div[^>]+class="[^"]*slide|<\/div>\s*<\/div>|$)/gi;
+    let m;
+    const slidesHtml = [];
+    // Abordagem mais confiável: usa DOMParser no contexto do navegador não é possível server-side
+    // então renderizamos o HTML completo e fazemos screenshot de cada slide por índice
     page = await browser.newPage();
-    await page.setViewport({ width: 600, height: 900 });
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 15000 });
-    await new Promise(r => setTimeout(r, 500));
-    const slides = await page.$$('.slide');
-    if (!slides.length) return res.status(400).json({ error: 'Nenhum .slide encontrado.' });
-    const images = [];
-    for (const slide of slides.slice(0, 10)) {
-      const buffer = await slide.screenshot({ type: 'jpeg', quality: 92 });
-      images.push(buffer.toString('base64'));
+    await page.setViewport({ width: 540, height: 675 });
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 20000 });
+    await new Promise(r => setTimeout(r, 800));
+
+    const slideCount = await page.evaluate(() =>
+      document.querySelectorAll('.slide').length
+    );
+    if (!slideCount) return res.status(400).json({ error: 'Nenhum .slide encontrado.' });
+
+    // Captura cada slide movendo o carrossel para o índice correto
+    for (let i = 0; i < Math.min(slideCount, 10); i++) {
+      // Navega para o slide i via JS
+      await page.evaluate((idx, total) => {
+        const track = document.getElementById('track');
+        if (track) track.style.transform = `translateX(-${idx*(100/total)}%)`;
+      }, i, slideCount);
+
+      await new Promise(r => setTimeout(r, 150));
+
+      // Screenshot do carousel (área visível = slide atual)
+      const carousel = await page.$('.carousel');
+      if (carousel) {
+        const buffer = await carousel.screenshot({ type: 'jpeg', quality: 92 });
+        images.push(buffer.toString('base64'));
+      }
     }
+
+    if (!images.length) return res.status(400).json({ error: 'Captura vazia.' });
     res.json({ ok: true, images });
   } catch (err) {
     console.error('render-slides erro:', err.message);

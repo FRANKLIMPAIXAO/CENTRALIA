@@ -1347,110 +1347,154 @@ async function saveIgSettings(){
 
 /* ══════════════════════════════════════════
    INSTAGRAM — CAPTURA DE SLIDES
-   Estratégia: servidor (Puppeteer) → fallback html2canvas
+   Cada slide é renderizado em isolamento (evita problema do flex carousel)
 ══════════════════════════════════════════ */
+
+// Extrai slides individuais do HTML do carrossel
+function extractSlideHtmlList(slidesHtml){
+  const parser = new DOMParser();
+  const doc    = parser.parseFromString(slidesHtml, 'text/html');
+
+  // Coleta CSS global
+  let cssText = Array.from(doc.querySelectorAll('style')).map(s=>s.textContent).join('\n');
+  // Coleta links de fonte
+  const fontLinks = Array.from(doc.querySelectorAll('link[rel="stylesheet"]'))
+    .map(l => `<link rel="stylesheet" href="${l.href}">`)
+    .join('\n');
+
+  // Pega elementos .slide
+  const slides = Array.from(doc.querySelectorAll('.slide'));
+  if(!slides.length) return [];
+
+  return slides.map((slide, i) => {
+    // CSS de reset para renderização isolada
+    const resetCss = `
+      html,body{margin:0;padding:0;background:#0A0F0A;width:540px;height:675px;overflow:hidden}
+      .slide{
+        position:relative !important;
+        width:540px !important;
+        height:675px !important;
+        min-height:675px !important;
+        display:flex !important;
+        flex-direction:column !important;
+        overflow:hidden !important;
+        box-sizing:border-box !important;
+      }
+    `;
+    return `<!DOCTYPE html><html lang="pt-BR"><head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      ${fontLinks}
+      <style>${resetCss}\n${cssText}</style>
+    </head><body>${slide.outerHTML}</body></html>`;
+  });
+}
+
 async function captureSlides(){
   if(!pl.slidesHtml) throw new Error('Nenhum slide disponível.');
 
   const lbl = document.getElementById('ig-cap-label');
   const bar = document.getElementById('ig-cap-bar');
 
-  // ── TENTATIVA 1: renderização no servidor (funciona em iOS/Android) ──
+  // ── TENTATIVA 1: servidor Puppeteer (iOS + Android) ──
   try {
-    if(lbl) lbl.textContent = 'Processando slides no servidor...';
-    if(bar) bar.style.width = '30%';
-
+    if(lbl) lbl.textContent = 'Processando no servidor...';
+    if(bar) bar.style.width = '20%';
     const res  = await fetch(`${API}/api/render-slides`, {
-      method : 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body   : JSON.stringify({ html: pl.slidesHtml })
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ html: pl.slidesHtml })
     });
     const data = await res.json();
-
-    if(res.ok && data.images && data.images.length >= 2) {
+    if(res.ok && data.images && data.images.length >= 2){
       if(bar) bar.style.width = '100%';
-      if(lbl) lbl.textContent = `${data.images.length} slides capturados ✓`;
+      if(lbl) lbl.textContent = `${data.images.length} slides ✓`;
       return data.images;
     }
-    // Se servidor retornou mas sem slides suficientes, cai no fallback
-    console.warn('render-slides: resposta insuficiente, tentando fallback...');
-  } catch(e) {
-    console.warn('render-slides falhou, tentando html2canvas...', e.message);
-  }
+  } catch(e){ console.warn('Puppeteer falhou:', e.message); }
 
-  // ── TENTATIVA 2: html2canvas com fontes seguras ──
+  // ── TENTATIVA 2: html2canvas — cada slide em container ISOLADO ──
   const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if(lbl) lbl.textContent = isIOS ? 'Preparando para iOS...' : 'Capturando slides...';
-  if(bar) bar.style.width = '10%';
+  if(lbl) lbl.textContent = 'Preparando slides...';
+  if(bar) bar.style.width = '5%';
 
-  const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:540px;height:auto;z-index:-1;pointer-events:none;background:#0A0F0A;overflow:visible';
+  // Extrai lista de HTML isolado por slide
+  let slideHtmlList = extractSlideHtmlList(pl.slidesHtml);
 
-  const parser  = new DOMParser();
-  const doc     = parser.parseFromString(pl.slidesHtml, 'text/html');
+  // Se não achou .slide, tenta capturar o corpo todo como fallback
+  if(!slideHtmlList.length){
+    throw new Error('Nenhum slide encontrado. Gere os slides novamente.');
+  }
+  if(slideHtmlList.length > 10) slideHtmlList = slideHtmlList.slice(0,10);
 
-  // CSS dos slides — no iOS substitui fontes externas por fontes do sistema
-  let cssText = Array.from(doc.querySelectorAll('style')).map(s=>s.textContent).join('\n');
+  // iOS: remove fontes externas de cada slide HTML
   if(isIOS){
-    // Remove @import de fontes externas (causa "The operation is insecure" no iOS)
-    cssText = cssText
+    slideHtmlList = slideHtmlList.map(h => h
+      .replace(/<link[^>]+googleapis[^>]+>/gi, '')
       .replace(/@import\s+url\([^)]+\)[^;]*;/gi, '')
-      .replace(/font-family\s*:\s*['"]?Archivo[^;]+;/gi, "font-family: -apple-system, 'SF Pro Display', Arial Black, sans-serif;")
-      .replace(/font-family\s*:\s*['"]?Manrope[^;]+;/gi, "font-family: -apple-system, 'SF Pro Text', Helvetica Neue, sans-serif;")
-      .replace(/font-family\s*:\s*['"]?Lora[^;]+;/gi, "font-family: Georgia, 'Times New Roman', serif;");
+      .replace(/font-family\s*:\s*['"]?Archivo[^;]+;/gi, "font-family:-apple-system,Arial Black,sans-serif;")
+      .replace(/font-family\s*:\s*['"]?Manrope[^;]+;/gi, "font-family:-apple-system,Helvetica Neue,sans-serif;")
+      .replace(/font-family\s*:\s*['"]?Lora[^;]+;/gi, "font-family:Georgia,serif;")
+    );
   }
-  const styleEl = document.createElement('style');
-  styleEl.textContent = cssText;
-  container.appendChild(styleEl);
-
-  // No iOS NÃO adiciona links externos — evita canvas taint
-  if(!isIOS){
-    Array.from(doc.querySelectorAll('link[rel="stylesheet"]')).forEach(link => {
-      const l = document.createElement('link'); l.rel='stylesheet'; l.href=link.href;
-      container.appendChild(l);
-    });
-  }
-
-  container.appendChild(doc.body.cloneNode(true));
-  document.body.appendChild(container);
-
-  if(!isIOS){ try { await document.fonts.ready; } catch(e){} }
-  await new Promise(r => setTimeout(r, isIOS ? 300 : 800));
-
-  let slides = Array.from(container.querySelectorAll('.slide'));
-  if(!slides.length) slides = Array.from(container.querySelectorAll('[class*="slide"]'));
-  if(!slides.length){ document.body.removeChild(container); throw new Error('Nenhum slide encontrado. Tente gerar os slides novamente.'); }
-  if(slides.length > 10) slides = slides.slice(0,10);
 
   const captured = [];
-  try {
-    for(let i=0; i<slides.length; i++){
-      if(bar) bar.style.width = Math.round((i/slides.length)*100)+'%';
-      if(lbl) lbl.textContent = `Capturando slide ${i+1} de ${slides.length}...`;
-      const sl = slides[i];
-      const canvas = await html2canvas(sl,{
-        width: sl.offsetWidth||540, height: sl.offsetHeight||675,
-        scale:1, backgroundColor:'#0A0F0A',
+  const W = 540, H = 675;
+
+  for(let i = 0; i < slideHtmlList.length; i++){
+    if(bar) bar.style.width = Math.round((i/slideHtmlList.length)*90)+'%';
+    if(lbl) lbl.textContent = `Capturando slide ${i+1} de ${slideHtmlList.length}...`;
+
+    // Cria container isolado para este slide
+    const wrap = document.createElement('div');
+    wrap.style.cssText = `position:fixed;left:-9999px;top:0;width:${W}px;height:${H}px;overflow:hidden;z-index:-1;pointer-events:none`;
+
+    const parser2 = new DOMParser();
+    const sdoc    = parser2.parseFromString(slideHtmlList[i], 'text/html');
+
+    // Injeta estilos
+    const sEl = document.createElement('style');
+    sEl.textContent = Array.from(sdoc.querySelectorAll('style')).map(s=>s.textContent).join('\n');
+    wrap.appendChild(sEl);
+
+    if(!isIOS){
+      Array.from(sdoc.querySelectorAll('link[rel="stylesheet"]')).forEach(link=>{
+        const l=document.createElement('link'); l.rel='stylesheet'; l.href=link.href;
+        wrap.appendChild(l);
+      });
+    }
+
+    // Injeta o slide
+    const slideEl = sdoc.querySelector('.slide');
+    if(slideEl){
+      slideEl.style.cssText += `;width:${W}px!important;height:${H}px!important;position:relative!important`;
+      wrap.appendChild(slideEl.cloneNode(true));
+    } else {
+      wrap.innerHTML += sdoc.body.innerHTML;
+    }
+
+    document.body.appendChild(wrap);
+    if(!isIOS){ try{ await document.fonts.ready; }catch(e){} }
+    await new Promise(r=>setTimeout(r, isIOS?200:500));
+
+    try{
+      const target = wrap.querySelector('.slide') || wrap;
+      const canvas = await html2canvas(target,{
+        width:W, height:H, scale:1,
+        backgroundColor:'#0A0F0A',
         logging:false,
-        useCORS: !isIOS,   // iOS: sem CORS (evita taint)
-        allowTaint: isIOS,  // iOS: permite taint mas não chama toDataURL em canvas sujo
+        useCORS:!isIOS, allowTaint:isIOS,
         foreignObjectRendering:false,
-        imageTimeout: 0,
-        onclone: (clonedDoc) => {
-          // iOS: remove qualquer recurso externo remanescente no clone
-          if(isIOS){
-            clonedDoc.querySelectorAll('link[rel="stylesheet"]').forEach(l=>l.remove());
-            clonedDoc.querySelectorAll('img[src^="http"]').forEach(img=>img.remove());
-          }
-        }
+        x:0, y:0,
+        scrollX:0, scrollY:0
       });
       captured.push(canvas.toDataURL('image/jpeg',0.92).split(',')[1]);
+    } finally {
+      document.body.removeChild(wrap);
     }
-  } finally {
-    document.body.removeChild(container);
   }
 
   if(bar) bar.style.width = '100%';
+  if(lbl) lbl.textContent = `${captured.length} slides capturados ✓`;
   return captured;
 }
 
