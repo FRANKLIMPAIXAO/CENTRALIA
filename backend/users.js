@@ -108,26 +108,36 @@ function verifyToken(token) {
 
 // Seed admin na primeira execução
 function seedAdmin() {
-  const adminEmail = process.env.ADMIN_EMAIL;
-  const adminPass  = process.env.ADMIN_PASSWORD;
-  if (!adminEmail || !adminPass) return;
-  const users = readUsers();
-  if (users.find(u => u.email === adminEmail)) return;
-  const admin = {
-    id: crypto.randomUUID(),
-    email: adminEmail.toLowerCase(),
-    passwordHash: hashPassword(adminPass),
-    name: 'Admin',
-    plan: 'admin',
-    active: true,
-    isAdmin: true,
-    createdAt: new Date().toISOString(),
-    lastLoginAt: null
-  };
-  users.push(admin);
-  writeUsers(users);
-  getUserDir(admin.id);
-  console.log(`✅ Admin criado: ${adminEmail}`);
+  try {
+    const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    const adminPass  = (process.env.ADMIN_PASSWORD || '').trim();
+    if (!adminEmail || !adminPass) {
+      console.log('⚠️  ADMIN_EMAIL ou ADMIN_PASSWORD não configurados — sem admin criado.');
+      return;
+    }
+    const users = readUsers();
+    if (users.find(u => u.email === adminEmail)) {
+      console.log(`✅ Admin já existe: ${adminEmail}`);
+      return;
+    }
+    const admin = {
+      id: crypto.randomUUID(),
+      email: adminEmail,
+      passwordHash: hashPassword(adminPass),
+      name: 'Admin',
+      plan: 'admin',
+      active: true,
+      isAdmin: true,
+      createdAt: new Date().toISOString(),
+      lastLoginAt: null
+    };
+    users.push(admin);
+    writeUsers(users);
+    getUserDir(admin.id);
+    console.log(`✅ Admin criado: ${adminEmail}`);
+  } catch (err) {
+    console.error('❌ Erro ao criar admin:', err.message);
+  }
 }
 
 module.exports = {

@@ -84,6 +84,26 @@ app.use(express.static(path.join(__dirname, '../frontend/public'), {
    AUTH ROUTES
 ══════════════════════════════════════════ */
 
+// Setup inicial — cria primeiro admin se nenhum usuário existir (sem auth)
+app.post('/api/auth/setup', (req, res) => {
+  const users = usersModule.readUsers();
+  if (users.length > 0) return res.status(403).json({ error: 'Setup já foi realizado.' });
+  const { email, password, name } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigatórios.' });
+  try {
+    const user = usersModule.createUser({ email, password, name: name || 'Admin', plan: 'admin' });
+    usersModule.updateUser(user.id, { isAdmin: true });
+    const token = usersModule.generateToken(user.id);
+    res.json({ ok: true, token, message: 'Admin criado com sucesso!' });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// Status — mostra se setup foi feito (sem auth)
+app.get('/api/auth/status', (req, res) => {
+  const users = usersModule.readUsers();
+  res.json({ setup: users.length > 0, users: users.length });
+});
+
 // Login
 app.post('/api/auth/login', (req, res) => {
   try {
