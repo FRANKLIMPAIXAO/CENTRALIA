@@ -26,9 +26,15 @@ const ig       = require('./instagram');
 const { fetchFullAnalytics } = require('./ig-analytics');
 const { parseFiscalXML, detectDocType, formatCurrency, formatPercent, crtLabel } = require('./modules/xml-parser');
 const usersModule = require('./users');
-usersModule.seedAdmin();
+const dbModule    = require('./db');
 
 const app      = express();
+
+// Inicializa schema PostgreSQL e seed admin de forma assíncrona
+(async () => {
+  await dbModule.initSchema();
+  await usersModule.seedAdmin();
+})().catch(err => console.error('Startup DB erro:', err.message));
 
 /* ══ PUPPETEER — renderização server-side de slides ══ */
 let puppeteerBrowser = null;
@@ -44,36 +50,35 @@ async function getPuppeteerBrowser() {
 
 /* ══ AUTH MULTI-USER ══ */
 function authMiddleware(req, res, next) {
-  // Rotas públicas
   if (req.path.startsWith('/auth')) return next();
-
   const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
-  const user  = usersModule.verifyToken(token);
-  if (!user) return res.status(401).json({ error: 'Não autorizado. Faça login.' });
-
-  req.user = user; // disponível em todas as rotas
-  next();
+  // verifyToken agora é async — usa Promise
+  Promise.resolve(usersModule.verifyToken(token))
+    .then(user => {
+      if (!user) return res.status(401).json({ error: 'Não autorizado. Faça login.' });
+      req.user = user;
+      next();
+    })
+    .catch(() => res.status(401).json({ error: 'Não autorizado.' }));
 }
 
 // Validação de chaves no startup
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error('❌ ANTHROPIC_API_KEY não encontrada no .env!');
-  console.error('   Arquivo .env esperado em:', path.join(__dirname, '.env'));
   process.exit(1);
 }
 console.log('✅ Chaves carregadas — Anthropic:', process.env.ANTHROPIC_API_KEY.slice(0,12) + '...',
             '| Gemini:', process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.slice(0,8) + '...' : 'NÃO CONFIGURADO');
+console.log('🗄️  Banco:', dbModule.isPostgres() ? 'PostgreSQL ✅' : 'Arquivo JSON (local)');
 
 const claude   = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const gemini   = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'placeholder');
-// Mantém compatibilidade com código existente
 const client   = claude;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.static(path.join(__dirname, '../frontend/public'), {
-  etag: false,
-  lastModified: false,
+  etag: false, lastModified: false,
   setHeaders: (res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
@@ -83,47 +88,39 @@ app.use(express.static(path.join(__dirname, '../frontend/public'), {
 /* ══════════════════════════════════════════
    AUTH ROUTES
 ══════════════════════════════════════════ */
-
-// Setup inicial — cria primeiro admin se nenhum usuário existir (sem auth)
-app.post('/api/auth/setup', (req, res) => {
-  const users = usersModule.readUsers();
-  if (users.length > 0) return res.status(403).json({ error: 'Setup já foi realizado.' });
-  const { email, password, name } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigatórios.' });
+app.post('/api/auth/setup', async (req, res) => {
   try {
-    const user = usersModule.createUser({ email, password, name: name || 'Admin', plan: 'admin' });
-    usersModule.updateUser(user.id, { isAdmin: true });
+    const users = await usersModule.readUsers();
+    if (users.length > 0) return res.status(403).json({ error: 'Setup já foi realizado.' });
+    const { email, password, name } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email e senha obrigatórios.' });
+    const user = await usersModule.createUser({ email, password, name: name||'Admin', plan:'admin' });
+    await usersModule.updateUser(user.id, { isAdmin: true });
     const token = usersModule.generateToken(user.id);
     res.json({ ok: true, token, message: 'Admin criado com sucesso!' });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-// Status — mostra se setup foi feito (sem auth)
-app.get('/api/auth/status', (req, res) => {
-  const users = usersModule.readUsers();
+app.get('/api/auth/status', async (req, res) => {
+  const users = await usersModule.readUsers();
   res.json({ setup: users.length > 0, users: users.length });
 });
 
-// Login
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
-    const user  = usersModule.authenticate(req.body.email, req.body.password);
+    const user  = await usersModule.authenticate(req.body.email, req.body.password);
     const token = usersModule.generateToken(user.id);
-    res.json({ ok: true, token, user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin, plan: user.plan } });
-  } catch (e) {
-    res.status(401).json({ error: e.message });
-  }
+    res.json({ ok:true, token, user:{ id:user.id, name:user.name, email:user.email, isAdmin:user.isAdmin, plan:user.plan } });
+  } catch (e) { res.status(401).json({ error: e.message }); }
 });
 
-// Check
-app.get('/api/auth/check', (req, res) => {
+app.get('/api/auth/check', async (req, res) => {
   const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
-  const user  = usersModule.verifyToken(token);
+  const user  = await usersModule.verifyToken(token);
   if (!user) return res.json({ ok: false, required: true });
-  res.json({ ok: true, required: true, user: { id: user.id, name: user.name, email: user.email, isAdmin: user.isAdmin } });
+  res.json({ ok: true, required: true, user:{ id:user.id, name:user.name, email:user.email, isAdmin:user.isAdmin } });
 });
 
-// Protege todas as rotas abaixo com auth
 app.use('/api', authMiddleware);
 
 /* ══════════════════════════════════════════
@@ -134,26 +131,19 @@ function adminOnly(req, res, next) {
   next();
 }
 
-app.get('/api/admin/users', adminOnly, (req, res) => {
-  res.json({ users: usersModule.getAllUsers() });
+app.get('/api/admin/users', adminOnly, async (req, res) => {
+  res.json({ users: await usersModule.getAllUsers() });
 });
-
-app.post('/api/admin/users', adminOnly, (req, res) => {
-  try {
-    const user = usersModule.createUser(req.body);
-    res.json({ ok: true, user });
-  } catch (e) { res.status(400).json({ error: e.message }); }
+app.post('/api/admin/users', adminOnly, async (req, res) => {
+  try { res.json({ ok:true, user: await usersModule.createUser(req.body) }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
 });
-
-app.put('/api/admin/users/:id', adminOnly, (req, res) => {
-  try {
-    const user = usersModule.updateUser(req.params.id, req.body);
-    res.json({ ok: true, user });
-  } catch (e) { res.status(400).json({ error: e.message }); }
+app.put('/api/admin/users/:id', adminOnly, async (req, res) => {
+  try { res.json({ ok:true, user: await usersModule.updateUser(req.params.id, req.body) }); }
+  catch (e) { res.status(400).json({ error: e.message }); }
 });
-
-app.delete('/api/admin/users/:id', adminOnly, (req, res) => {
-  usersModule.deleteUser(req.params.id);
+app.delete('/api/admin/users/:id', adminOnly, async (req, res) => {
+  await usersModule.deleteUser(req.params.id);
   res.json({ ok: true });
 });
 
